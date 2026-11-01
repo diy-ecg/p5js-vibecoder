@@ -14,6 +14,10 @@ Gib einfach auf Deutsch oder Englisch ein, was du programmieren oder ändern mö
   - `✨ Sketch anpassen`: Liest deinen aktuellen Code aus und baut Erweiterungen oder Änderungen gezielt ein.
   - `🆕 Neuer Sketch`: Generiert einen frischen Sketch von Grund auf.
 - **↩ Undo-Funktion**: Macht die letzte KI-Änderung mit einem Klick rückgängig, falls ein Prompt nicht das gewünschte Ergebnis geliefert hat.
+- **🕒 Prompt-Verlauf (History)**:
+  - Speichert deine letzten Prompts dauerhaft im Browser.
+  - Klickbarer **„🕒 Verlauf“**-Button mit Liste aller bisherigen Prompts.
+  - Wie im Terminal: Mit <kbd>↑</kbd> und <kbd>↓</kbd> im Textfeld direkt durch frühere Prompts blättern!
 - **Inspirations-Chips**: Klickbare Schnellstarter für Ideen (z. B. 🌌 *Sternenhimmel*, 🌊 *Noise Wellen*, 🕹️ *Bouncing Balls*, ✨ *Maus-Partikel*).
 - **Tastatur-Kürzel**:
   - <kbd>Strg</kbd> + <kbd>Enter</kbd> (bzw. <kbd>Cmd</kbd> + <kbd>Enter</kbd> auf Mac): Prompt sofort abschicken & generieren.
