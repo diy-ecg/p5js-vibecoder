@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Bilingual](https://img.shields.io/badge/Language-English%20%7C%20Deutsch-blue)](#-bilingual-support-en--de)
 
-A high-performance browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/).
+A browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/).
 
 Simply type what you want to visualize, build, or modify in natural language. Powered by **Google Gemini**, the extension generates production-ready p5.js code in seconds, injects it straight into your CodeMirror editor, and automatically runs your sketch!
 
