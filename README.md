@@ -22,6 +22,9 @@ Gib einfach auf Deutsch oder Englisch ein, was du programmieren oder ändern mö
 - **▶️ Auto-Play Schalter**:
   - Direkt neben dem Verlauf: Schalter auf **ON** (Standard) startet den generierten Sketch sofort automatisch im p5-Viewer.
   - Auf **OFF** hast du die manuelle Kontrolle per Klick auf den Play-Button.
+- **🌍 Zweisprachig (Deutsch & Englisch)**:
+  - Umschalter direkt in den Einstellungen (sowohl im schwebenden Panel als auch im Toolbar-Popup).
+  - Alle Oberflächenelemente, Statusmeldungen, Fehlerhinweise und KI-Systemanweisungen passen sich sofort dynamisch an.
 - **Tastatur-Kürzel**:
   - <kbd>Strg</kbd> + <kbd>Enter</kbd> (bzw. <kbd>Cmd</kbd> + <kbd>Enter</kbd> auf Mac): Prompt sofort abschicken & generieren.
   - <kbd>Alt</kbd> + <kbd>V</kbd>: Panel ein- oder ausblenden.

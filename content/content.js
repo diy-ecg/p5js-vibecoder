@@ -13,13 +13,140 @@
     model: 'gemini-2.0-flash',
     autoRun: true,
     isMinimized: false,
-    availableModels: []
+    availableModels: [],
+    lang: 'de'
   };
   let codeHistory = [];
   let promptHistory = [];
   let chatSession = []; // Multi-turn conversational memory
   let isGenerating = false;
   let pendingRequests = new Map();
+
+  /**
+   * Bilingual localization dictionary (DE / EN)
+   */
+  const I18N = {
+    de: {
+      panelTitle: 'p5.js Vibe Coder',
+      pillTitle: 'Klicken zum Öffnen des p5.js Vibe Coder Panels',
+      modelBadgeTitle: (m) => `Aktives Modell: ${m}`,
+      btnSettingsTitle: 'Einstellungen (API-Key & Sprache)',
+      btnMinimizeTitle: 'Minimieren',
+      apiKeyLabel: 'Gemini API Key',
+      showPassword: 'Passwort anzeigen',
+      hidePassword: 'Passwort verbergen',
+      getKeyLink: 'Kostenlosen Key bei Google AI Studio holen ↗',
+      modelLabel: 'Gemini Modell',
+      refreshModelsBtn: '🔄 Modelle prüfen',
+      refreshModelsTitle: 'Verfügbare Modelle für diesen Key prüfen',
+      languageLabel: 'Sprache / Language',
+      chatIndicatorNew: '💬 Neuer Chat',
+      chatIndicatorNewTitle: 'Erste Nachricht startet einen neuen Dialog',
+      chatIndicatorActive: (n) => `💬 Chat (${n} ${n === 1 ? 'Runde' : 'Runden'})`,
+      chatIndicatorActiveTitle: (n) => `${n} vorherige Chat-${n === 1 ? 'Runde fließt' : 'Runden fließen'} als Kontext mit ein. Klicke × zum Zurücksetzen.`,
+      resetChatTitle: 'Chat-Kontext zurücksetzen',
+      autoPlayTitle: 'Auto-Play: Startet das p5.js Skript nach Generierung direkt (on/off)',
+      autoPlayText: 'Auto-Play',
+      historyBtn: (n) => `🕒 Verlauf (${n})`,
+      historyBtnTitle: 'Verlauf bisheriger Prompts einsehen',
+      historyHeader: 'Bisherige Prompts',
+      historyClear: 'Leeren',
+      historyEmpty: 'Noch keine Prompts gespeichert',
+      historyItemTitle: (item) => `Klicken zum Übernehmen:\n"${item}"`,
+      btnGenerate: 'Vibe Code',
+      btnGenerating: 'Vibing...',
+      btnUndo: '↩ Undo',
+      undoTitleEmpty: 'Keine vorherige Version vorhanden',
+      undoTitleCount: (n) => `Letzte Version wiederherstellen (${n} ${n === 1 ? 'Version' : 'Versionen'} im Speicher)`,
+      statusReady: 'Bereit. Gib eine Idee ein und klicke auf Vibe Code!',
+      statusEnterPrompt: '⚠️ Bitte gib zuerst eine Idee oder Anweisung ein.',
+      statusEnterKey: '⚠️ Bitte trage zuerst deinen Gemini API-Key in den Einstellungen ein.',
+      statusThinking: (m) => `Gemini denkt nach (${m})...`,
+      statusSuccessRunning: (m) => `✅ Code eingefügt & Skript gestartet!${m}`,
+      statusSuccessManual: (m) => `✅ Code eingefügt!${m} Drücke jetzt auf ▶ Play im Webeditor.`,
+      statusClipboard: '⚠️ Code generiert & in Zwischenablage kopiert! (Drücke Cmd+V im Editor zum Einfügen)',
+      statusInjectError: '⚠️ Code generiert, konnte aber nicht automatisch eingefügt werden. Editor geöffnet?',
+      statusExtensionUpdated: '⚠️ Das Add-on wurde aktualisiert. Bitte lade diese Seite einmal neu (Cmd+R / F5).',
+      statusRestoring: 'Code wird wiederhergestellt...',
+      statusRestoredRunning: '↩ Vorheriger Code wiederhergestellt & Skript gestartet!',
+      statusRestoredManual: '↩ Vorheriger Code wiederhergestellt!',
+      statusRestoreError: 'Konnte Code nicht in Editor einfügen.',
+      statusChatReset: 'Chat-Kontext zurückgesetzt. Neuer Dialog begonnen.',
+      statusHistoryCleared: 'Verlauf geleert.',
+      statusSwitchingModel: (m) => `Wechsle zu Alternativ-Modell ${m}...`,
+      modelInfoEnterKey: 'Trage zuerst einen API-Key ein.',
+      modelInfoChecking: 'Prüfe Modelle bei Google...',
+      modelInfoActive: (n) => `✓ ${n} Modelle für deinen Key aktiv`,
+      modelInfoError: 'Konnte keine Modelle abrufen (Key prüfen).',
+      invalidKeyError: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key in den Einstellungen.',
+      noResponseError: 'Keine Antwort von Gemini erhalten.'
+    },
+    en: {
+      panelTitle: 'p5.js Vibe Coder',
+      pillTitle: 'Click to open p5.js Vibe Coder panel',
+      modelBadgeTitle: (m) => `Active model: ${m}`,
+      btnSettingsTitle: 'Settings (API Key & Language)',
+      btnMinimizeTitle: 'Minimize',
+      apiKeyLabel: 'Gemini API Key',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
+      getKeyLink: 'Get free key from Google AI Studio ↗',
+      modelLabel: 'Gemini Model',
+      refreshModelsBtn: '🔄 Check Models',
+      refreshModelsTitle: 'Check available models for this key',
+      languageLabel: 'Language / Sprache',
+      chatIndicatorNew: '💬 New Chat',
+      chatIndicatorNewTitle: 'First prompt starts a new conversation',
+      chatIndicatorActive: (n) => `💬 Chat (${n} ${n === 1 ? 'round' : 'rounds'})`,
+      chatIndicatorActiveTitle: (n) => `${n} previous chat ${n === 1 ? 'round is' : 'rounds are'} included as context. Click × to reset.`,
+      resetChatTitle: 'Reset chat context',
+      autoPlayTitle: 'Auto-Play: Automatically runs the p5.js sketch after generation (on/off)',
+      autoPlayText: 'Auto-Play',
+      historyBtn: (n) => `🕒 History (${n})`,
+      historyBtnTitle: 'View previous prompts',
+      historyHeader: 'Previous Prompts',
+      historyClear: 'Clear',
+      historyEmpty: 'No prompts saved yet',
+      historyItemTitle: (item) => `Click to load:\n"${item}"`,
+      btnGenerate: 'Vibe Code',
+      btnGenerating: 'Vibing...',
+      btnUndo: '↩ Undo',
+      undoTitleEmpty: 'No previous version available',
+      undoTitleCount: (n) => `Restore previous version (${n} ${n === 1 ? 'version' : 'versions'} in memory)`,
+      statusReady: 'Ready. Enter an idea and click Vibe Code!',
+      statusEnterPrompt: '⚠️ Please enter an idea or instruction first.',
+      statusEnterKey: '⚠️ Please enter your Gemini API key in settings first.',
+      statusThinking: (m) => `Gemini is thinking (${m})...`,
+      statusSuccessRunning: (m) => `✅ Code injected & sketch started!${m}`,
+      statusSuccessManual: (m) => `✅ Code injected!${m} Click ▶ Play in the web editor now.`,
+      statusClipboard: '⚠️ Code generated & copied to clipboard! (Press Cmd+V in editor to paste)',
+      statusInjectError: '⚠️ Code generated but could not be auto-injected. Is editor open?',
+      statusExtensionUpdated: '⚠️ The extension was updated. Please reload this page (Cmd+R / F5).',
+      statusRestoring: 'Restoring code...',
+      statusRestoredRunning: '↩ Previous code restored & sketch started!',
+      statusRestoredManual: '↩ Previous code restored!',
+      statusRestoreError: 'Could not inject code into editor.',
+      statusChatReset: 'Chat context reset. Started new conversation.',
+      statusHistoryCleared: 'History cleared.',
+      statusSwitchingModel: (m) => `Switching to alternative model ${m}...`,
+      modelInfoEnterKey: 'Enter an API key first.',
+      modelInfoChecking: 'Checking models with Google...',
+      modelInfoActive: (n) => `✓ ${n} models active for your key`,
+      modelInfoError: 'Could not fetch models (check key).',
+      invalidKeyError: 'Invalid Gemini API key. Please check your key in settings.',
+      noResponseError: 'No response received from Gemini.'
+    }
+  };
+
+  function t(key, ...args) {
+    const lang = config.lang || 'de';
+    const dict = I18N[lang] || I18N.de;
+    const val = dict[key] !== undefined ? dict[key] : (I18N.de[key] !== undefined ? I18N.de[key] : '');
+    if (typeof val === 'function') {
+      return val(...args);
+    }
+    return val;
+  }
 
   /**
    * Format Gemini model IDs to clean, human-readable display names
@@ -52,7 +179,7 @@
     const target = modelId || config.model;
     if (label && target) {
       label.textContent = formatModelName(target);
-      label.title = `Aktives Modell: ${target}`;
+      label.title = t('modelBadgeTitle', target);
     }
   }
 
@@ -134,13 +261,20 @@
     let userInstruction = '';
     const hasHistory = chatSession && chatSession.length > 0;
     const hasExistingCode = currentCode && currentCode.trim().length > 30;
+    const isEn = (config.lang === 'en');
 
     if (hasHistory) {
-      userInstruction = `Folge-Anweisung im laufenden Chat: "${prompt}"\n\nAktueller Code im Webeditor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nBitte passe den Code basierend auf dem bisherigen Chat-Verlauf und dieser Anweisung an. Gib den vollständigen p5.js Code zurück.`;
+      userInstruction = isEn
+        ? `Follow-up instruction in running chat: "${prompt}"\n\nCurrent code in web editor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nPlease adapt the code based on the previous conversation and this instruction. Return the complete updated p5.js code.`
+        : `Folge-Anweisung im laufenden Chat: "${prompt}"\n\nAktueller Code im Webeditor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nBitte passe den Code basierend auf dem bisherigen Chat-Verlauf und dieser Anweisung an. Gib den vollständigen p5.js Code zurück.`;
     } else if (hasExistingCode) {
-      userInstruction = `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
+      userInstruction = isEn
+        ? `Here is the current p5.js sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nModify or extend the sketch based on the following request:\n"${prompt}"\n\nReturn the complete, revised JavaScript code containing all functions (setup, draw etc.).`
+        : `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
     } else {
-      userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
+      userInstruction = isEn
+        ? `Create a new, complete p5.js sketch based on the following idea:\n\n"${prompt}"\n\nReturn the complete JavaScript code.`
+        : `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
     }
 
     const currentTurn = {
@@ -150,11 +284,18 @@
 
     const contents = [...(chatSession || []), currentTurn];
 
-    const requestBody = {
-      contents: contents,
-      systemInstruction: {
-        parts: [{
-          text: `Du bist ein brillanter Creative Coder und p5.js Spezialist in einem interaktiven Chat.
+    const systemPromptText = isEn
+      ? `You are a brilliant Creative Coder and p5.js specialist in an interactive chat.
+Your task is to generate high-quality, aesthetic and bug-free p5.js code (JavaScript) for the p5.js web editor.
+
+RULES:
+1. Return EXCLUSIVELY executable JavaScript code for the p5.js web editor.
+2. No explanations before or after the code, no markdown commentary outside fences, no polite phrases.
+3. Code MUST include standard p5.js functions like setup() and draw() (if animated/interactive).
+4. Ensure smooth 60 FPS performance and proper canvas initialization (e.g. createCanvas(400, 400) or windowWidth/windowHeight as appropriate).
+5. Use beautiful colors, clever math (sin, cos, noise, lerp) or interactive elements (mouseX, mouseY, keys) when appropriate for the prompt.
+6. Consider previous conversation messages and seamlessly build upon them.`
+      : `Du bist ein brillanter Creative Coder und p5.js Spezialist in einem interaktiven Chat.
 Deine Aufgabe ist es, hochwertigen, ästhetischen und fehlerfreien p5.js Code (JavaScript) für den p5.js Web-Editor zu generieren.
 
 REGELN:
@@ -163,7 +304,13 @@ REGELN:
 3. Der Code MUSS standardmäßige p5.js Methoden enthalten wie setup() und draw() (sofern animiert/interaktiv).
 4. Sorge für flüssige 60 FPS Performance und saubere Canvas-Initialisierung (z.B. createCanvas(400, 400) oder windowWidth/windowHeight falls passend).
 5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.
-6. Berücksichtige die bisherige Unterhaltung und baue nahtlos auf vorherigen Anweisungen auf.`
+6. Berücksichtige die bisherige Unterhaltung und baue nahtlos auf vorherigen Anweisungen auf.`;
+
+    const requestBody = {
+      contents: contents,
+      systemInstruction: {
+        parts: [{
+          text: systemPromptText
         }]
       },
       generationConfig: {
@@ -190,7 +337,7 @@ REGELN:
 
     const candidate = data.candidates?.[0];
     if (!candidate || !candidate.content?.parts?.[0]?.text) {
-      return { success: false, error: 'Keine Antwort von Gemini erhalten.' };
+      return { success: false, error: t('noResponseError') };
     }
 
     return {
@@ -229,7 +376,7 @@ REGELN:
       const currentModel = queue[modelIdx];
 
       if (modelIdx > 0 && typeof onStatusUpdate === 'function') {
-        onStatusUpdate(`Wechsle zu Alternativ-Modell ${formatModelName(currentModel)}...`);
+        onStatusUpdate(t('statusSwitchingModel', formatModelName(currentModel)));
       }
 
       // Try current model with exponential backoff for high demand (up to 3 attempts)
@@ -260,7 +407,7 @@ REGELN:
           if (errMsg.includes('api key') && !errMsg.includes('quota')) {
             return {
               success: false,
-              error: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key in den Einstellungen.'
+              error: t('invalidKeyError')
             };
           }
 
@@ -746,7 +893,7 @@ REGELN:
     const pill = document.createElement('div');
     pill.id = 'p5-vibe-pill';
     pill.innerHTML = `<span>⚡</span> <span>p5.js Vibe Coder</span>`;
-    pill.title = 'Klicken zum Öffnen des p5.js Vibe Coder Panels';
+    pill.title = t('pillTitle');
     document.body.appendChild(pill);
 
     // Floating Main Panel
@@ -760,8 +907,8 @@ REGELN:
           <span class="p5-vibe-model-tag" id="p5-vibe-model-label">Gemini 2.0 Flash</span>
         </div>
         <div class="p5-vibe-actions">
-          <button class="p5-vibe-icon-btn" id="p5-vibe-btn-settings" title="Einstellungen (API-Key)">⚙</button>
-          <button class="p5-vibe-icon-btn" id="p5-vibe-btn-minimize" title="Minimieren">−</button>
+          <button class="p5-vibe-icon-btn" id="p5-vibe-btn-settings" title="${t('btnSettingsTitle')}">⚙</button>
+          <button class="p5-vibe-icon-btn" id="p5-vibe-btn-minimize" title="${t('btnMinimizeTitle')}">−</button>
         </div>
       </div>
 
@@ -769,20 +916,20 @@ REGELN:
         <!-- Settings Drawer -->
         <div class="p5-vibe-settings" id="p5-vibe-settings-drawer">
           <div class="p5-vibe-field">
-            <label for="p5-vibe-key-input">Gemini API Key</label>
+            <label for="p5-vibe-key-input" id="p5-vibe-label-key">${t('apiKeyLabel')}</label>
             <div class="p5-vibe-input-wrapper">
               <input type="password" id="p5-vibe-key-input" class="p5-vibe-input" placeholder="AIzaSy..." spellcheck="false" autocomplete="off" />
-              <button type="button" class="p5-vibe-input-toggle" id="p5-vibe-toggle-key" title="Passwort anzeigen">👁</button>
+              <button type="button" class="p5-vibe-input-toggle" id="p5-vibe-toggle-key" title="${t('showPassword')}">👁</button>
             </div>
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="p5-vibe-settings-link">
-              Kostenlosen Key bei Google AI Studio holen ↗
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="p5-vibe-settings-link" id="p5-vibe-settings-link">
+              ${t('getKeyLink')}
             </a>
           </div>
 
           <div class="p5-vibe-field">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-              <label for="p5-vibe-model-select">Gemini Modell</label>
-              <button type="button" class="p5-vibe-btn-refresh-models" id="p5-vibe-btn-refresh-models" title="Verfügbare Modelle für diesen Key prüfen">🔄 Modelle prüfen</button>
+              <label for="p5-vibe-model-select" id="p5-vibe-label-model">${t('modelLabel')}</label>
+              <button type="button" class="p5-vibe-btn-refresh-models" id="p5-vibe-btn-refresh-models" title="${t('refreshModelsTitle')}">${t('refreshModelsBtn')}</button>
             </div>
             <select id="p5-vibe-model-select" class="p5-vibe-select">
               <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
@@ -790,21 +937,29 @@ REGELN:
             </select>
             <span id="p5-vibe-model-info" style="font-size: 10px; color: var(--p5-vibe-text-muted); margin-top: 2px;"></span>
           </div>
+
+          <div class="p5-vibe-field">
+            <label for="p5-vibe-lang-select" id="p5-vibe-label-lang">${t('languageLabel')}</label>
+            <select id="p5-vibe-lang-select" class="p5-vibe-select">
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="en">🇬🇧 English</option>
+            </select>
+          </div>
         </div>
 
         <!-- Prompt Header with Chat Indicator, Auto-Play Switch and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
-            <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="Aktiver Chat-Kontext (vorherige Prompts fließen mit ein)">💬 Neuer Chat</span>
+            <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="${t('chatIndicatorNewTitle')}">${t('chatIndicatorNew')}</span>
           </div>
           <div class="p5-vibe-prompt-tools">
-            <label class="p5-vibe-switch" title="Auto-Play: Startet das p5.js Skript nach Generierung direkt (on/off)">
+            <label class="p5-vibe-switch" title="${t('autoPlayTitle')}">
               <input type="checkbox" id="p5-vibe-autorun-toggle" checked />
               <span class="p5-vibe-switch-slider"></span>
-              <span class="p5-vibe-switch-text">Auto-Play</span>
+              <span class="p5-vibe-switch-text">${t('autoPlayText')}</span>
             </label>
-            <button type="button" class="p5-vibe-btn-history" id="p5-vibe-btn-history" title="Verlauf bisheriger Prompts einsehen">
-              🕒 Verlauf (<span id="p5-vibe-history-count">0</span>)
+            <button type="button" class="p5-vibe-btn-history" id="p5-vibe-btn-history" title="${t('historyBtnTitle')}">
+              ${t('historyBtn', 0)}
             </button>
           </div>
         </div>
@@ -812,8 +967,8 @@ REGELN:
         <!-- History Popover / Drawer -->
         <div class="p5-vibe-history-drawer" id="p5-vibe-history-drawer">
           <div class="p5-vibe-history-header">
-            <span>Bisherige Prompts</span>
-            <button type="button" class="p5-vibe-btn-clear-history" id="p5-vibe-btn-clear-history">Leeren</button>
+            <span id="p5-vibe-history-header-title">${t('historyHeader')}</span>
+            <button type="button" class="p5-vibe-btn-clear-history" id="p5-vibe-btn-clear-history">${t('historyClear')}</button>
           </div>
           <div class="p5-vibe-history-list" id="p5-vibe-history-list"></div>
         </div>
@@ -831,16 +986,16 @@ REGELN:
         <div class="p5-vibe-footer-actions">
           <button class="p5-vibe-btn-primary" id="p5-vibe-btn-generate">
             <span id="p5-vibe-gen-icon">⚡</span>
-            <span id="p5-vibe-gen-text">Vibe Code</span>
+            <span id="p5-vibe-gen-text">${t('btnGenerate')}</span>
           </button>
-          <button class="p5-vibe-btn-secondary" id="p5-vibe-btn-undo" title="Letzte Änderung rückgängig machen" disabled>
-            ↩ Undo
+          <button class="p5-vibe-btn-secondary" id="p5-vibe-btn-undo" title="${t('undoTitleEmpty')}" disabled>
+            ${t('btnUndo')}
           </button>
         </div>
 
         <!-- Status / Feedback -->
         <div class="p5-vibe-status" id="p5-vibe-status-msg">
-          Bereit. Gib eine Idee ein und klicke auf Vibe Code!
+          ${t('statusReady')}
         </div>
       </div>
     `;
@@ -860,11 +1015,85 @@ REGELN:
     const toggleKeyBtn = panel.querySelector('#p5-vibe-toggle-key');
     const modelSelect = panel.querySelector('#p5-vibe-model-select');
     const modelLabel = panel.querySelector('#p5-vibe-model-label');
+    const langSelect = panel.querySelector('#p5-vibe-lang-select');
     const btnMinimize = panel.querySelector('#p5-vibe-btn-minimize');
     const promptText = panel.querySelector('#p5-vibe-prompt-text');
     const btnGenerate = panel.querySelector('#p5-vibe-btn-generate');
     const btnUndo = panel.querySelector('#p5-vibe-btn-undo');
     const statusMsg = panel.querySelector('#p5-vibe-status-msg');
+    const btnHistory = panel.querySelector('#p5-vibe-btn-history');
+    const historyDrawer = panel.querySelector('#p5-vibe-history-drawer');
+    const historyList = panel.querySelector('#p5-vibe-history-list');
+    const btnClearHistory = panel.querySelector('#p5-vibe-btn-clear-history');
+    const chatIndicator = panel.querySelector('#p5-vibe-chat-indicator');
+    const btnRefreshModels = panel.querySelector('#p5-vibe-btn-refresh-models');
+    const modelInfo = panel.querySelector('#p5-vibe-model-info');
+    const autoRunToggle = panel.querySelector('#p5-vibe-autorun-toggle');
+
+    let historyNavIndex = -1;
+    let draftPrompt = '';
+
+    // Apply language across UI dynamically
+    function applyLanguage(lang) {
+      config.lang = lang === 'en' ? 'en' : 'de';
+
+      if (pill) pill.title = t('pillTitle');
+      if (btnSettings) btnSettings.title = t('btnSettingsTitle');
+      if (btnMinimize) btnMinimize.title = t('btnMinimizeTitle');
+      updateModelBadge(config.model);
+
+      const labelKey = panel.querySelector('#p5-vibe-label-key');
+      if (labelKey) labelKey.textContent = t('apiKeyLabel');
+
+      if (toggleKeyBtn && keyInput) {
+        toggleKeyBtn.title = keyInput.type === 'password' ? t('showPassword') : t('hidePassword');
+      }
+
+      const settingsLink = panel.querySelector('#p5-vibe-settings-link');
+      if (settingsLink) settingsLink.textContent = t('getKeyLink');
+
+      const labelModel = panel.querySelector('#p5-vibe-label-model');
+      if (labelModel) labelModel.textContent = t('modelLabel');
+
+      if (btnRefreshModels) {
+        btnRefreshModels.textContent = t('refreshModelsBtn');
+        btnRefreshModels.title = t('refreshModelsTitle');
+      }
+
+      const labelLang = panel.querySelector('#p5-vibe-label-lang');
+      if (labelLang) labelLang.textContent = t('languageLabel');
+
+      if (langSelect && langSelect.value !== config.lang) {
+        langSelect.value = config.lang;
+      }
+
+      const switchLabel = panel.querySelector('.p5-vibe-switch');
+      if (switchLabel) switchLabel.title = t('autoPlayTitle');
+      const switchText = panel.querySelector('.p5-vibe-switch-text');
+      if (switchText) switchText.textContent = t('autoPlayText');
+
+      const historyHeader = panel.querySelector('#p5-vibe-history-header-title');
+      if (historyHeader) historyHeader.textContent = t('historyHeader');
+
+      if (btnClearHistory) btnClearHistory.textContent = t('historyClear');
+
+      updateHistoryButton();
+      renderHistoryList();
+      updateChatIndicator();
+
+      const genText = panel.querySelector('#p5-vibe-gen-text');
+      if (genText && !isGenerating) genText.textContent = t('btnGenerate');
+
+      if (btnUndo) btnUndo.textContent = t('btnUndo');
+      updateUndoButtonState();
+
+      if (statusMsg && (statusMsg.textContent.includes('Bereit') || statusMsg.textContent.includes('Ready'))) {
+        statusMsg.textContent = t('statusReady');
+      }
+    }
+
+    // Expose applyLanguage for storage listeners
+    panel.__applyLanguage = applyLanguage;
 
     // Dragging Logic
     let isDragging = false;
@@ -929,28 +1158,27 @@ REGELN:
       if (keyInput.type === 'password') {
         keyInput.type = 'text';
         toggleKeyBtn.textContent = '🔒';
+        toggleKeyBtn.title = t('hidePassword');
       } else {
         keyInput.type = 'password';
         toggleKeyBtn.textContent = '👁';
+        toggleKeyBtn.title = t('showPassword');
       }
     });
 
-    const btnRefreshModels = panel.querySelector('#p5-vibe-btn-refresh-models');
-    const modelInfo = panel.querySelector('#p5-vibe-model-info');
-
     async function refreshModelList(showFeedback = true) {
       if (!config.apiKey) {
-        if (showFeedback && modelInfo) modelInfo.textContent = 'Trage zuerst einen API-Key ein.';
+        if (showFeedback && modelInfo) modelInfo.textContent = t('modelInfoEnterKey');
         return;
       }
-      if (showFeedback && modelInfo) modelInfo.textContent = 'Prüfe Modelle bei Google...';
+      if (showFeedback && modelInfo) modelInfo.textContent = t('modelInfoChecking');
       const models = await fetchAvailableModels(config.apiKey);
       if (models && models.length > 0) {
         config.availableModels = models;
         updateDropdown(models);
-        if (modelInfo) modelInfo.textContent = `✓ ${models.length} Modelle für deinen Key aktiv`;
+        if (modelInfo) modelInfo.textContent = t('modelInfoActive', models.length);
       } else {
-        if (showFeedback && modelInfo) modelInfo.textContent = 'Konnte keine Modelle abrufen (Key prüfen).';
+        if (showFeedback && modelInfo) modelInfo.textContent = t('modelInfoError');
       }
     }
 
@@ -979,6 +1207,15 @@ REGELN:
       btnRefreshModels.addEventListener('click', () => refreshModelList(true));
     }
 
+    // Language Selector Event
+    if (langSelect) {
+      langSelect.addEventListener('change', () => {
+        config.lang = langSelect.value;
+        applyLanguage(config.lang);
+        browser.storage.local.set({ p5VibeLang: config.lang });
+      });
+    }
+
     // Auto-save API Key and Model
     keyInput.addEventListener('change', () => {
       config.apiKey = keyInput.value.trim();
@@ -995,7 +1232,6 @@ REGELN:
     });
 
     // Auto-Play Toggle Switch
-    const autoRunToggle = panel.querySelector('#p5-vibe-autorun-toggle');
     if (autoRunToggle) {
       autoRunToggle.checked = config.autoRun;
       autoRunToggle.addEventListener('change', () => {
@@ -1007,7 +1243,8 @@ REGELN:
     function saveSettings() {
       browser.storage.local.set({
         geminiApiKey: config.apiKey,
-        geminiModel: config.model
+        geminiModel: config.model,
+        p5VibeLang: config.lang
       });
     }
 
@@ -1029,19 +1266,17 @@ REGELN:
     pill.addEventListener('click', expandPanel);
 
     // Chat indicator UI
-    const chatIndicator = panel.querySelector('#p5-vibe-chat-indicator');
-
     function updateChatIndicator() {
       if (!chatIndicator) return;
       const turnPairs = Math.floor(chatSession.length / 2);
       if (turnPairs === 0) {
         chatIndicator.className = 'p5-vibe-chat-pill';
-        chatIndicator.innerHTML = '💬 Neuer Chat';
-        chatIndicator.title = 'Erste Nachricht startet einen neuen Dialog';
+        chatIndicator.innerHTML = t('chatIndicatorNew');
+        chatIndicator.title = t('chatIndicatorNewTitle');
       } else {
         chatIndicator.className = 'p5-vibe-chat-pill active';
-        chatIndicator.innerHTML = `💬 Chat (${turnPairs} ${turnPairs === 1 ? 'Runde' : 'Runden'}) <button type="button" class="p5-vibe-btn-reset-chat" id="p5-vibe-btn-reset-chat" title="Chat-Kontext zurücksetzen">×</button>`;
-        chatIndicator.title = `${turnPairs} vorherige Chat-Runden fließen als Kontext mit ein. Klicke × zum Zurücksetzen.`;
+        chatIndicator.innerHTML = `${t('chatIndicatorActive', turnPairs)} <button type="button" class="p5-vibe-btn-reset-chat" id="p5-vibe-btn-reset-chat" title="${t('resetChatTitle')}">×</button>`;
+        chatIndicator.title = t('chatIndicatorActiveTitle', turnPairs);
 
         const btnReset = chatIndicator.querySelector('#p5-vibe-btn-reset-chat');
         if (btnReset) {
@@ -1056,32 +1291,29 @@ REGELN:
     function resetChatSession() {
       chatSession = [];
       updateChatIndicator();
-      setStatus('Chat-Kontext zurückgesetzt. Neuer Dialog begonnen.', 'info');
+      setStatus(t('statusChatReset'), 'info');
     }
 
     // Prompt History UI & Navigation
-    const btnHistory = panel.querySelector('#p5-vibe-btn-history');
-    const historyDrawer = panel.querySelector('#p5-vibe-history-drawer');
-    const historyList = panel.querySelector('#p5-vibe-history-list');
-    const historyCount = panel.querySelector('#p5-vibe-history-count');
-    const btnClearHistory = panel.querySelector('#p5-vibe-btn-clear-history');
-
-    let historyNavIndex = -1;
-    let draftPrompt = '';
+    function updateHistoryButton() {
+      if (!btnHistory) return;
+      btnHistory.title = t('historyBtnTitle');
+      btnHistory.innerHTML = `${t('historyBtn', promptHistory.length)}`;
+    }
 
     function renderHistoryList() {
-      if (historyCount) historyCount.textContent = promptHistory.length;
+      updateHistoryButton();
       if (!historyList) return;
       historyList.innerHTML = '';
       if (promptHistory.length === 0) {
-        historyList.innerHTML = '<div class="p5-vibe-history-empty">Noch keine Prompts gespeichert</div>';
+        historyList.innerHTML = `<div class="p5-vibe-history-empty">${t('historyEmpty')}</div>`;
         return;
       }
       promptHistory.forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'p5-vibe-history-item';
         div.textContent = item;
-        div.title = `Klicken zum Übernehmen:\n"${item}"`;
+        div.title = t('historyItemTitle', item);
         div.addEventListener('click', () => {
           promptText.value = item;
           promptText.focus();
@@ -1105,6 +1337,7 @@ REGELN:
       promptHistory = [];
       browser.storage.local.set({ p5VibePromptHistory: [] });
       renderHistoryList();
+      setStatus(t('statusHistoryCleared'), 'info');
     });
 
     function savePromptToHistory(prompt) {
@@ -1176,27 +1409,27 @@ REGELN:
         updateChatIndicator();
       }
       
-      setStatus('Code wird wiederhergestellt...', 'loading');
+      setStatus(t('statusRestoring'), 'loading');
       const success = await setEditorCode(prevCode);
       if (success) {
         if (config.autoRun) {
           setTimeout(() => {
             triggerPlaySketch();
           }, 180);
-          setStatus('↩ Vorheriger Code wiederhergestellt & Skript gestartet!', 'success');
+          setStatus(t('statusRestoredRunning'), 'success');
         } else {
-          setStatus('↩ Vorheriger Code wiederhergestellt!', 'success');
+          setStatus(t('statusRestoredManual'), 'success');
         }
       } else {
-        setStatus('Konnte Code nicht in Editor einfügen.', 'error');
+        setStatus(t('statusRestoreError'), 'error');
       }
     });
 
     function updateUndoButtonState() {
       btnUndo.disabled = codeHistory.length === 0;
       btnUndo.title = codeHistory.length > 0 
-        ? `Letzte Version wiederherstellen (${codeHistory.length} Versionen im Speicher)`
-        : 'Keine vorherige Version vorhanden';
+        ? t('undoTitleCount', codeHistory.length)
+        : t('undoTitleEmpty');
     }
 
     // Set Status Message Helper
@@ -1218,7 +1451,7 @@ REGELN:
       const prompt = promptText.value.trim();
       if (!prompt) {
         promptText.focus();
-        setStatus('Bitte gib zuerst eine Idee oder Anweisung ein.', 'error');
+        setStatus(t('statusEnterPrompt'), 'error');
         return;
       }
 
@@ -1226,7 +1459,7 @@ REGELN:
         settingsDrawer.classList.add('open');
         btnSettings.classList.add('active');
         keyInput.focus();
-        setStatus('Bitte trage zuerst deinen Gemini API-Key ein.', 'error');
+        setStatus(t('statusEnterKey'), 'error');
         return;
       }
 
@@ -1235,8 +1468,8 @@ REGELN:
       isGenerating = true;
       btnGenerate.disabled = true;
       panel.querySelector('#p5-vibe-gen-icon').innerHTML = '<span class="p5-vibe-spinner"></span>';
-      panel.querySelector('#p5-vibe-gen-text').textContent = 'Vibing...';
-      setStatus(`Gemini denkt nach (${formatModelName(config.model)})...`, 'loading');
+      panel.querySelector('#p5-vibe-gen-text').textContent = t('btnGenerating');
+      setStatus(t('statusThinking', formatModelName(config.model)), 'loading');
 
       try {
         // Read current editor code
@@ -1262,7 +1495,8 @@ REGELN:
             currentCode: currentCode,
             apiKey: config.apiKey,
             model: config.model,
-            chatSession: chatSession
+            chatSession: chatSession,
+            lang: config.lang
           });
         }
 
@@ -1309,37 +1543,37 @@ REGELN:
               const modelNotice = response.modelUsed && response.modelUsed !== config.model 
                 ? ` (${formatModelName(response.modelUsed)})` 
                 : '';
-              setStatus(`✅ Code eingefügt & Skript gestartet!${modelNotice}`, 'success');
+              setStatus(t('statusSuccessRunning', modelNotice), 'success');
             } else {
               const modelNotice = response.modelUsed && response.modelUsed !== config.model 
                 ? ` (${formatModelName(response.modelUsed)})` 
                 : '';
-              setStatus(`✅ Code eingefügt!${modelNotice} Drücke jetzt auf ▶ Play im Webeditor.`, 'success');
+              setStatus(t('statusSuccessManual', modelNotice), 'success');
             }
           } else {
             try {
               await navigator.clipboard.writeText(response.code);
-              setStatus('⚠️ Code generiert & in Zwischenablage kopiert! (Drücke Cmd+V im Editor zum Einfügen)', 'error');
+              setStatus(t('statusClipboard'), 'error');
             } catch (clipErr) {
-              setStatus('⚠️ Code generiert, konnte aber nicht automatisch eingefügt werden. Editor geöffnet?', 'error');
+              setStatus(t('statusInjectError'), 'error');
             }
           }
         } else {
-          const errMsg = response?.error || 'Unbekannter Fehler bei der Generierung.';
+          const errMsg = response?.error || (config.lang === 'en' ? 'Unknown error during code generation.' : 'Unbekannter Fehler bei der Generierung.');
           setStatus(`⚠️ ${errMsg}`, 'error');
         }
       } catch (err) {
         const msg = err.message || '';
         if (msg.includes('Receiving end does not exist') || msg.includes('Extension context invalidated') || msg.includes('Could not establish connection')) {
-          setStatus('⚠️ Das Add-on wurde aktualisiert. Bitte lade diese Seite einmal neu (Cmd+R / F5).', 'error');
+          setStatus(t('statusExtensionUpdated'), 'error');
         } else {
-          setStatus(`⚠️ Fehler: ${msg}`, 'error');
+          setStatus(`⚠️ ${config.lang === 'en' ? 'Error: ' : 'Fehler: '}${msg}`, 'error');
         }
       } finally {
         isGenerating = false;
         btnGenerate.disabled = false;
         panel.querySelector('#p5-vibe-gen-icon').textContent = '⚡';
-        panel.querySelector('#p5-vibe-gen-text').textContent = 'Vibe Code';
+        panel.querySelector('#p5-vibe-gen-text').textContent = t('btnGenerate');
       }
     }
   }
@@ -1352,7 +1586,8 @@ REGELN:
       'p5VibePosition',
       'p5VibeMinimized',
       'p5VibePromptHistory',
-      'p5VibeAutoRun'
+      'p5VibeAutoRun',
+      'p5VibeLang'
     ]).then((data) => {
       const panel = document.getElementById('p5-vibe-panel');
       const pill = document.getElementById('p5-vibe-pill');
@@ -1361,6 +1596,13 @@ REGELN:
       const modelLabel = document.getElementById('p5-vibe-model-label');
       const historyCount = document.getElementById('p5-vibe-history-count');
       const autoRunToggle = document.getElementById('p5-vibe-autorun-toggle');
+
+      if (data.p5VibeLang === 'en' || data.p5VibeLang === 'de') {
+        config.lang = data.p5VibeLang;
+      }
+      if (panel && typeof panel.__applyLanguage === 'function') {
+        panel.__applyLanguage(config.lang);
+      }
 
       if (typeof data.p5VibeAutoRun === 'boolean') {
         config.autoRun = data.p5VibeAutoRun;
@@ -1373,7 +1615,10 @@ REGELN:
 
       if (Array.isArray(data.p5VibePromptHistory)) {
         promptHistory = data.p5VibePromptHistory;
-        if (historyCount) historyCount.textContent = promptHistory.length;
+        const btnHistory = document.getElementById('p5-vibe-btn-history');
+        if (btnHistory) {
+          btnHistory.innerHTML = `${t('historyBtn', promptHistory.length)}`;
+        }
       }
 
       if (data.geminiApiKey) {
@@ -1383,7 +1628,7 @@ REGELN:
           if (models && models.length > 0) {
             config.availableModels = models;
             const modelInfo = document.getElementById('p5-vibe-model-info');
-            if (modelInfo) modelInfo.textContent = `✓ ${models.length} Modelle für deinen Key aktiv`;
+            if (modelInfo) modelInfo.textContent = t('modelInfoActive', models.length);
             if (modelSelect) {
               const current = config.model;
               modelSelect.innerHTML = '';
@@ -1429,6 +1674,35 @@ REGELN:
       }
     });
   }
+
+  // Cross-context storage listener (keeps in-page panel synced with toolbar popup settings)
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local') {
+      const panel = document.getElementById('p5-vibe-panel');
+      if (changes.p5VibeLang && changes.p5VibeLang.newValue) {
+        config.lang = changes.p5VibeLang.newValue;
+        if (panel && typeof panel.__applyLanguage === 'function') {
+          panel.__applyLanguage(config.lang);
+        }
+      }
+      if (changes.geminiApiKey && changes.geminiApiKey.newValue !== undefined) {
+        config.apiKey = changes.geminiApiKey.newValue;
+        const keyInput = document.getElementById('p5-vibe-key-input');
+        if (keyInput) keyInput.value = config.apiKey;
+      }
+      if (changes.geminiModel && changes.geminiModel.newValue !== undefined) {
+        config.model = changes.geminiModel.newValue;
+        const modelSelect = document.getElementById('p5-vibe-model-select');
+        if (modelSelect) modelSelect.value = config.model;
+        updateModelBadge(config.model);
+      }
+      if (changes.p5VibeAutoRun && typeof changes.p5VibeAutoRun.newValue === 'boolean') {
+        config.autoRun = changes.p5VibeAutoRun.newValue;
+        const autoRunToggle = document.getElementById('p5-vibe-autorun-toggle');
+        if (autoRunToggle) autoRunToggle.checked = config.autoRun;
+      }
+    }
+  });
 
   // Initialize
   injectBridge();
