@@ -10,23 +10,21 @@ Gib einfach auf Deutsch oder Englisch ein, was du programmieren oder ändern mö
 
 - **Schwebendes Panel (Floating Panel)**: Frei über den Webeditor verschiebbar (Drag & Drop am Header) und minimierbar zu einem dezenten Badge.
 - **Google Gemini Anbindung**: Unterstützt **Gemini 3.8 Flash** (schnell & smart) und **Gemini 3.8 Pro** (für komplexe 3D- & Mathe-Sketche).
-- **Zwei Modi**:
-  - `✨ Sketch anpassen`: Liest deinen aktuellen Code aus und baut Erweiterungen oder Änderungen gezielt ein.
-  - `🆕 Neuer Sketch`: Generiert einen frischen Sketch von Grund auf.
 - **💬 Echter Multi-Turn Chat & Schlankes Interface**:
-  - Kein manuelles Umschalten zwischen Modi nötig: Das Plugin erkennt automatisch, ob du an einem bestehenden Sketch weiterbaust oder bei leerem Editor von Grund auf neu startest.
+  - Nahtloser Workflow ohne manuelle Modus-Schalter: Das Plugin erkennt automatisch den bestehenden Code im Editor und passt ihn an bzw. baut bei leerem Editor von Grund auf neu.
   - Die KI behält den gesamten Dialog-Verlauf im Gedächtnis (*„Mache es grün“*, *„Lass es pulsieren“* etc.).
   - Mit dem kleinen **`×`**-Reset auf der Chat-Pille startest du jederzeit einen frischen Dialog für eine neue Idee.
 - **↩ Undo-Funktion**: Macht die letzte KI-Änderung mit einem Klick rückgängig – und spult gleichzeitig auch das Gedächtnis des Chats um eine Runde zurück!
 - **🕒 Prompt-Verlauf (History)**:
   - Speichert deine letzten Prompts dauerhaft im Browser.
-  - Klickbarer **„🕒 Verlauf“**-Button mit Liste aller bisherigen Prompts.
+  - Klickbarer **„🕒 Verlauf“**-Button mit Liste aller bisherigen Prompts zum schnellen Wiederverwenden.
   - Wie im Terminal: Mit <kbd>↑</kbd> und <kbd>↓</kbd> im Textfeld direkt durch frühere Prompts blättern!
-- **Inspirations-Chips**: Klickbare Schnellstarter für Ideen (z. B. 🌌 *Sternenhimmel*, 🌊 *Noise Wellen*, 🕹️ *Bouncing Balls*, ✨ *Maus-Partikel*).
+- **▶️ Auto-Play Schalter**:
+  - Direkt neben dem Verlauf: Schalter auf **ON** (Standard) startet den generierten Sketch sofort automatisch im p5-Viewer.
+  - Auf **OFF** hast du die manuelle Kontrolle per Klick auf den Play-Button.
 - **Tastatur-Kürzel**:
   - <kbd>Strg</kbd> + <kbd>Enter</kbd> (bzw. <kbd>Cmd</kbd> + <kbd>Enter</kbd> auf Mac): Prompt sofort abschicken & generieren.
   - <kbd>Alt</kbd> + <kbd>V</kbd>: Panel ein- oder ausblenden.
-- **Kein Auto-Run**: Volle Kontrolle – du bestimmst, wann der Sketch gestartet wird.
 
 ---
 
