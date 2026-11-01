@@ -555,14 +555,6 @@ REGELN:
           <button class="p5-vibe-mode-btn" id="p5-vibe-mode-create" data-mode="create">🆕 Neuer Sketch</button>
         </div>
 
-        <!-- Inspiration Chips -->
-        <div class="p5-vibe-chips">
-          <button class="p5-vibe-chip" data-prompt="Ein interaktiver 3D-Sternenhimmel mit WEBGL, bei dem die Sterne auf Mausbewegung reagieren">🌌 Sternenhimmel</button>
-          <button class="p5-vibe-chip" data-prompt="Organische, pulsierende Perlin-Noise Wellen mit fließenden Regenbogen-Farbverläufen">🌊 Noise Wellen</button>
-          <button class="p5-vibe-chip" data-prompt="50 bunte neonfarbene Bälle, die von den Wänden abprallen und Schwerkraft haben">🕹️ Bouncing Balls</button>
-          <button class="p5-vibe-chip" data-prompt="Ein leuchtendes Partikelsystem, das einen Schweif hinter dem Mauszeiger herzieht">✨ Maus-Partikel</button>
-        </div>
-
         <!-- Prompt Header with Chat Indicator and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
@@ -634,7 +626,6 @@ REGELN:
     const btnGenerate = panel.querySelector('#p5-vibe-btn-generate');
     const btnUndo = panel.querySelector('#p5-vibe-btn-undo');
     const statusMsg = panel.querySelector('#p5-vibe-status-msg');
-    const chips = panel.querySelectorAll('.p5-vibe-chip');
 
     // Dragging Logic
     let isDragging = false;
@@ -848,15 +839,6 @@ REGELN:
       modeEditBtn.classList.remove('active');
       resetChatSession();
       promptText.placeholder = 'Beschreibe eine völlig neue Idee für einen Sketch...';
-    });
-
-    // Quick Inspiration Chips
-    chips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        const text = chip.getAttribute('data-prompt');
-        promptText.value = text;
-        promptText.focus();
-      });
     });
 
     // Prompt History UI & Navigation
