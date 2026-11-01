@@ -237,23 +237,30 @@
   padding: 4px;
 }
 
+#p5-vibe-panel a.p5-vibe-settings-link,
+#p5-vibe-panel a.p5-vibe-settings-link:link,
+#p5-vibe-panel a.p5-vibe-settings-link:visited,
 .p5-vibe-settings-link {
   font-size: 11px;
-  color: #60a5fa;
-  text-decoration: none;
-  align-self: flex-start;
-  transition: color 0.15s ease;
-}
-
-.p5-vibe-settings-link:hover {
+  color: #94a3b8 !important;
   text-decoration: underline;
-  color: #93c5fd;
+  text-decoration-color: rgba(148, 163, 184, 0.4);
+  align-self: flex-start;
+  transition: all 0.15s ease;
 }
 
+#p5-vibe-panel a.p5-vibe-settings-link:hover,
+#p5-vibe-panel a.p5-vibe-settings-link:focus,
+.p5-vibe-settings-link:hover {
+  color: #f1f5f9 !important;
+  text-decoration-color: #f1f5f9;
+}
+
+#p5-vibe-panel .p5-vibe-btn-refresh-models,
 .p5-vibe-btn-refresh-models {
   background: transparent;
   border: none;
-  color: #60a5fa;
+  color: #94a3b8 !important;
   font-size: 11px;
   cursor: pointer;
   padding: 0;
@@ -261,9 +268,10 @@
   transition: color 0.15s ease;
 }
 
+#p5-vibe-panel .p5-vibe-btn-refresh-models:hover,
 .p5-vibe-btn-refresh-models:hover {
   text-decoration: underline;
-  color: #93c5fd;
+  color: #f1f5f9 !important;
 }
 
 .p5-vibe-select {
