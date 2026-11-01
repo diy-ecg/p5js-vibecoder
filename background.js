@@ -5,35 +5,28 @@
 
 const DEFAULT_MODEL = 'gemini-3.8-flash';
 
-// Listen for messages from content script and popup
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+// Listen for messages from content script and popup (Promise-based for Firefox WebExtensions)
+browser.runtime.onMessage.addListener((message, sender) => {
   if (message.action === 'GENERATE_CODE') {
-    handleGenerateCode(message)
-      .then(result => sendResponse(result))
-      .catch(err => sendResponse({ success: false, error: err.message || 'Unbekannter Fehler' }));
-    return true; // Keep message channel open for async response
+    return handleGenerateCode(message);
   }
 
   if (message.action === 'GET_CONFIG') {
-    browser.storage.local.get(['geminiApiKey', 'geminiModel'])
-      .then(res => {
-        sendResponse({
-          apiKey: res.geminiApiKey || '',
-          model: res.geminiModel || DEFAULT_MODEL
-        });
-      })
-      .catch(err => sendResponse({ error: err.message }));
-    return true;
+    return browser.storage.local.get(['geminiApiKey', 'geminiModel'])
+      .then(res => ({
+        apiKey: res.geminiApiKey || '',
+        model: res.geminiModel || DEFAULT_MODEL
+      }))
+      .catch(err => ({ error: err.message }));
   }
 
   if (message.action === 'SAVE_CONFIG') {
-    browser.storage.local.set({
+    return browser.storage.local.set({
       geminiApiKey: message.apiKey,
       geminiModel: message.model || DEFAULT_MODEL
     })
-      .then(() => sendResponse({ success: true }))
-      .catch(err => sendResponse({ success: false, error: err.message }));
-    return true;
+      .then(() => ({ success: true }))
+      .catch(err => ({ success: false, error: err.message }));
   }
 });
 
