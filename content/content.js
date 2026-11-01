@@ -11,7 +11,8 @@
   let config = {
     apiKey: '',
     model: 'gemini-3.8-flash',
-    isMinimized: false
+    isMinimized: false,
+    availableModels: []
   };
   let codeHistory = [];
   let isGenerating = false;
@@ -30,7 +31,7 @@
     }
   }
 
-  // 2. Direct Gemini API Request with Automatic Multi-Model Fallback Cascade
+  // 2. Direct Gemini API Request with ModelService.ListModels Discovery & Exponential Backoff
   function cleanGeneratedCode(rawText) {
     if (!rawText) return '';
     let text = rawText.trim();
@@ -52,19 +53,42 @@
     return text;
   }
 
-  function getModelCascade(preferredModel) {
-    let base = preferredModel || 'gemini-2.0-flash';
-    if (base.includes('2.5-flash')) base = 'gemini-2.0-flash';
-    if (base.includes('2.5-pro')) base = 'gemini-3.8-pro';
+  /**
+   * Fetch verified models directly from Google Gemini ModelService for this API key
+   */
+  async function fetchAvailableModels(apiKey) {
+    if (!apiKey || !apiKey.trim()) return [];
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey.trim())}`;
+      const response = await fetch(endpoint);
+      if (!response.ok) return [];
+      const data = await response.json();
+      if (!data.models || !Array.isArray(data.models)) return [];
 
-    const order = [base];
-    const alternates = ['gemini-2.0-flash', 'gemini-3.8-flash', 'gemini-1.5-flash'];
-    for (const alt of alternates) {
-      if (!order.includes(alt)) {
-        order.push(alt);
-      }
+      const available = data.models
+        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => {
+          const id = m.name.replace(/^models\//, '');
+          return {
+            id: id,
+            displayName: m.displayName || id
+          };
+        });
+
+      // Sort models: flash first, then pro, then others
+      available.sort((a, b) => {
+        const aFlash = a.id.includes('flash');
+        const bFlash = b.id.includes('flash');
+        if (aFlash && !bFlash) return -1;
+        if (!aFlash && bFlash) return 1;
+        return a.id.localeCompare(b.id);
+      });
+
+      return available;
+    } catch (err) {
+      console.warn('[p5-vibe] Error fetching models from Google:', err);
+      return [];
     }
-    return order;
   }
 
   async function callSingleGeminiModel({ prompt, currentCode, mode, apiKey, model }) {
@@ -126,17 +150,40 @@ REGELN:
   }
 
   async function requestGeminiApi({ prompt, currentCode, mode, apiKey, model, onStatusUpdate }) {
-    const cascade = getModelCascade(model);
+    // 1. Ensure verified models are loaded
+    let verified = config.availableModels;
+    if (!verified || verified.length === 0) {
+      verified = await fetchAvailableModels(apiKey);
+      if (verified && verified.length > 0) {
+        config.availableModels = verified;
+      }
+    }
+
+    // 2. Build model queue: preferred model first, then verified models
+    let queue = [];
+    const base = model || 'gemini-3.8-flash';
+    queue.push(base);
+
+    if (verified && verified.length > 0) {
+      for (const m of verified) {
+        if (!queue.includes(m.id)) {
+          queue.push(m.id);
+        }
+      }
+    }
+
     let lastError = null;
 
-    for (let i = 0; i < cascade.length; i++) {
-      const currentModel = cascade[i];
+    for (let modelIdx = 0; modelIdx < queue.length; modelIdx++) {
+      const currentModel = queue[modelIdx];
 
-      if (i > 0 && typeof onStatusUpdate === 'function') {
-        onStatusUpdate(`Auslastungsspitze bei ${cascade[i - 1]} – wechsle automatisch zu ${currentModel}...`);
+      if (modelIdx > 0 && typeof onStatusUpdate === 'function') {
+        onStatusUpdate(`Wechsle zu Alternativ-Modell ${currentModel}...`);
       }
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      // Try current model with exponential backoff for high demand (up to 3 attempts)
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           const res = await callSingleGeminiModel({
             prompt,
@@ -155,18 +202,9 @@ REGELN:
           }
 
           const errMsg = (res.error || '').toLowerCase();
-          const isOverloaded = errMsg.includes('high demand') ||
-                               errMsg.includes('spikes in demand') ||
-                               errMsg.includes('temporarily') ||
-                               errMsg.includes('overloaded') ||
-                               errMsg.includes('503') ||
-                               errMsg.includes('429') ||
-                               errMsg.includes('resource exhausted') ||
-                               errMsg.includes('quota');
-
           lastError = res.error;
 
-          // If invalid key, do not retry
+          // If invalid key, stop immediately
           if (errMsg.includes('api key') && !errMsg.includes('quota')) {
             return {
               success: false,
@@ -174,19 +212,34 @@ REGELN:
             };
           }
 
+          // If 404 / not found, do not retry this model, skip to next
+          if (res.status === 404 || errMsg.includes('not found')) {
+            break;
+          }
+
+          // If high demand / 503 / 429
+          const isOverloaded = errMsg.includes('high demand') ||
+                               errMsg.includes('spikes in demand') ||
+                               errMsg.includes('temporarily') ||
+                               errMsg.includes('overloaded') ||
+                               errMsg.includes('503') ||
+                               errMsg.includes('429') ||
+                               errMsg.includes('resource exhausted');
+
           if (isOverloaded) {
-            if (attempt === 1) {
+            if (attempt < maxAttempts) {
+              const waitSec = attempt * 1.5;
               if (typeof onStatusUpdate === 'function') {
-                onStatusUpdate(`${currentModel} ist ausgelastet – erneuter Versuch in 1 Sekunde...`);
+                onStatusUpdate(`⏳ Lastspitze bei ${currentModel} – automatischer Versuch in ${waitSec}s (${attempt}/${maxAttempts})...`);
               }
-              await new Promise(r => setTimeout(r, 1000));
-              continue;
+              await new Promise(r => setTimeout(r, waitSec * 1000));
+              continue; // Retry same model
             } else {
-              // Move to next model in cascade
+              // Exceeded attempts on this model, try next model in queue
               break;
             }
           } else {
-            // Some other error, try next model in cascade
+            // Other error
             break;
           }
         } catch (err) {
@@ -198,7 +251,7 @@ REGELN:
 
     return {
       success: false,
-      error: lastError || 'Alle Gemini-Modelle sind momentan ausgelastet. Bitte versuche es kurz erneut.'
+      error: lastError || 'Gemini API ist momentan nicht erreichbar. Bitte versuche es kurz erneut.'
     };
   }
 
@@ -467,13 +520,15 @@ REGELN:
           </div>
 
           <div class="p5-vibe-field">
-            <label for="p5-vibe-model-select">Gemini Modell</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <label for="p5-vibe-model-select">Gemini Modell</label>
+              <button type="button" class="p5-vibe-btn-refresh-models" id="p5-vibe-btn-refresh-models" title="Verfügbare Modelle für diesen Key prüfen">🔄 Modelle prüfen</button>
+            </div>
             <select id="p5-vibe-model-select" class="p5-vibe-select">
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Sehr stabil & schnell – Empfohlen)</option>
-              <option value="gemini-3.8-flash">Gemini 3.8 Flash (Neueste Generation)</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Klassisch)</option>
-              <option value="gemini-3.8-pro">Gemini 3.8 Pro (Präzise für komplexe Mathematik)</option>
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
             </select>
+            <span id="p5-vibe-model-info" style="font-size: 10px; color: var(--p5-vibe-text-muted); margin-top: 2px;"></span>
           </div>
         </div>
 
@@ -613,10 +668,57 @@ REGELN:
       }
     });
 
+    const btnRefreshModels = panel.querySelector('#p5-vibe-btn-refresh-models');
+    const modelInfo = panel.querySelector('#p5-vibe-model-info');
+
+    async function refreshModelList(showFeedback = true) {
+      if (!config.apiKey) {
+        if (showFeedback && modelInfo) modelInfo.textContent = 'Trage zuerst einen API-Key ein.';
+        return;
+      }
+      if (showFeedback && modelInfo) modelInfo.textContent = 'Prüfe Modelle bei Google...';
+      const models = await fetchAvailableModels(config.apiKey);
+      if (models && models.length > 0) {
+        config.availableModels = models;
+        updateDropdown(models);
+        if (modelInfo) modelInfo.textContent = `✓ ${models.length} Modelle für deinen Key aktiv`;
+      } else {
+        if (showFeedback && modelInfo) modelInfo.textContent = 'Konnte keine Modelle abrufen (Key prüfen).';
+      }
+    }
+
+    function updateDropdown(models) {
+      if (!modelSelect || !models || models.length === 0) return;
+      const currentSelected = config.model;
+      modelSelect.innerHTML = '';
+      for (const m of models) {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.displayName !== m.id ? `${m.displayName} (${m.id})` : m.id;
+        if (m.id === currentSelected) {
+          opt.selected = true;
+        }
+        modelSelect.appendChild(opt);
+      }
+      if (!modelSelect.value) {
+        modelSelect.value = models[0].id;
+        config.model = models[0].id;
+      }
+      updateModelBadge();
+      saveSettings();
+    }
+
+    if (btnRefreshModels) {
+      btnRefreshModels.addEventListener('click', () => refreshModelList(true));
+    }
+
     // Auto-save API Key and Model
     keyInput.addEventListener('change', () => {
       config.apiKey = keyInput.value.trim();
       saveSettings();
+      if (config.apiKey) {
+        refreshModelList(false);
+      }
     });
 
     modelSelect.addEventListener('change', () => {
@@ -856,6 +958,31 @@ REGELN:
       if (data.geminiApiKey) {
         config.apiKey = data.geminiApiKey;
         if (keyInput) keyInput.value = data.geminiApiKey;
+        fetchAvailableModels(data.geminiApiKey).then((models) => {
+          if (models && models.length > 0) {
+            config.availableModels = models;
+            const modelInfo = document.getElementById('p5-vibe-model-info');
+            if (modelInfo) modelInfo.textContent = `✓ ${models.length} Modelle für deinen Key aktiv`;
+            if (modelSelect) {
+              const current = config.model;
+              modelSelect.innerHTML = '';
+              for (const m of models) {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.displayName !== m.id ? `${m.displayName} (${m.id})` : m.id;
+                if (m.id === current) opt.selected = true;
+                modelSelect.appendChild(opt);
+              }
+              if (!modelSelect.value) {
+                modelSelect.value = models[0].id;
+                config.model = models[0].id;
+              }
+              if (modelLabel) {
+                modelLabel.textContent = config.model.replace(/^gemini-/, '').replace(/-/g, ' ');
+              }
+            }
+          }
+        });
       }
 
       if (data.geminiModel) {

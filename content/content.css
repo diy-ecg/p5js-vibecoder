@@ -229,6 +229,22 @@
   color: #93c5fd;
 }
 
+.p5-vibe-btn-refresh-models {
+  background: transparent;
+  border: none;
+  color: #60a5fa;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.p5-vibe-btn-refresh-models:hover {
+  text-decoration: underline;
+  color: #93c5fd;
+}
+
 .p5-vibe-select {
   width: 100%;
   background: #14151a;
