@@ -63,7 +63,7 @@ function cleanGeneratedCode(rawText) {
 /**
  * Call the Google Gemini API to generate or modify p5.js code
  */
-async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model }) {
+async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model, chatSession }) {
   if (!apiKey || !apiKey.trim()) {
     return {
       success: false,
@@ -76,7 +76,7 @@ async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model }) 
   if (baseModel.includes('2.5-pro')) baseModel = 'gemini-3.8-pro';
 
   const cascade = [baseModel];
-  for (const alt of ['gemini-2.0-flash', 'gemini-3.8-flash', 'gemini-1.5-flash']) {
+  for (const alt of ['gemini-2.0-flash', 'gemini-3.8-flash']) {
     if (!cascade.includes(alt)) cascade.push(alt);
   }
 
@@ -86,17 +86,24 @@ async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model }) 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(currentModel)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
 
     let userInstruction = '';
-    if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
+    const hasHistory = chatSession && chatSession.length > 0;
+
+    if (hasHistory) {
+      userInstruction = `Folge-Anweisung im Chat: "${prompt}"\n\nAktueller Code im Webeditor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nBitte passe den Code basierend auf dem bisherigen Chat-Verlauf und dieser Anweisung an. Gib den vollständigen p5.js Code zurück.`;
+    } else if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
       userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
     } else {
       userInstruction = `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
     }
 
+    const currentTurn = { role: 'user', parts: [{ text: userInstruction }] };
+    const contents = [...(chatSession || []), currentTurn];
+
     const requestBody = {
-      contents: [{ role: 'user', parts: [{ text: userInstruction }] }],
+      contents: contents,
       systemInstruction: {
         parts: [{
-          text: `Du bist ein brillanter Creative Coder und p5.js Spezialist.
+          text: `Du bist ein brillanter Creative Coder und p5.js Spezialist in einem interaktiven Chat.
 Deine Aufgabe ist es, hochwertigen, ästhetischen und fehlerfreien p5.js Code (JavaScript) für den p5.js Web-Editor zu generieren.
 
 REGELN:
@@ -104,7 +111,8 @@ REGELN:
 2. Keine Erklärungen vor oder nach dem Code, kein Begleittext, keine Höflichkeitsfloskeln.
 3. Der Code MUSS standardmäßige p5.js Methoden enthalten wie setup() und draw() (sofern animiert/interaktiv).
 4. Sorge für flüssige 60 FPS Performance und saubere Canvas-Initialisierung (z.B. createCanvas(400, 400) oder windowWidth/windowHeight falls passend).
-5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.`
+5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.
+6. Berücksichtige vorherige Nachrichten und baue nahtlos darauf auf.`
         }]
       },
       generationConfig: {

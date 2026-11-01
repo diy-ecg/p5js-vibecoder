@@ -16,6 +16,7 @@
   };
   let codeHistory = [];
   let promptHistory = [];
+  let chatSession = []; // Multi-turn conversational memory
   let isGenerating = false;
   let activeMode = 'edit'; // 'edit' or 'create'
   let pendingRequests = new Map();
@@ -92,21 +93,32 @@
     }
   }
 
-  async function callSingleGeminiModel({ prompt, currentCode, mode, apiKey, model }) {
+  async function callSingleGeminiModel({ prompt, currentCode, mode, apiKey, model, chatSession }) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
 
     let userInstruction = '';
-    if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
+    const hasHistory = chatSession && chatSession.length > 0;
+
+    if (hasHistory) {
+      userInstruction = `Folge-Anweisung im laufenden Chat: "${prompt}"\n\nAktueller Code im Webeditor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nBitte passe den Code basierend auf dem bisherigen Chat-Verlauf und dieser Anweisung an. Gib den vollständigen p5.js Code zurück.`;
+    } else if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
       userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
     } else {
       userInstruction = `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
     }
 
+    const currentTurn = {
+      role: 'user',
+      parts: [{ text: userInstruction }]
+    };
+
+    const contents = [...(chatSession || []), currentTurn];
+
     const requestBody = {
-      contents: [{ role: 'user', parts: [{ text: userInstruction }] }],
+      contents: contents,
       systemInstruction: {
         parts: [{
-          text: `Du bist ein brillanter Creative Coder und p5.js Spezialist.
+          text: `Du bist ein brillanter Creative Coder und p5.js Spezialist in einem interaktiven Chat.
 Deine Aufgabe ist es, hochwertigen, ästhetischen und fehlerfreien p5.js Code (JavaScript) für den p5.js Web-Editor zu generieren.
 
 REGELN:
@@ -114,7 +126,8 @@ REGELN:
 2. Keine Erklärungen vor oder nach dem Code, kein Begleittext, keine Höflichkeitsfloskeln.
 3. Der Code MUSS standardmäßige p5.js Methoden enthalten wie setup() und draw() (sofern animiert/interaktiv).
 4. Sorge für flüssige 60 FPS Performance und saubere Canvas-Initialisierung (z.B. createCanvas(400, 400) oder windowWidth/windowHeight falls passend).
-5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.`
+5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.
+6. Berücksichtige die bisherige Unterhaltung und baue nahtlos auf vorherigen Anweisungen auf.`
         }]
       },
       generationConfig: {
@@ -146,11 +159,12 @@ REGELN:
 
     return {
       success: true,
-      code: cleanGeneratedCode(candidate.content.parts[0].text)
+      code: cleanGeneratedCode(candidate.content.parts[0].text),
+      userInstruction: userInstruction
     };
   }
 
-  async function requestGeminiApi({ prompt, currentCode, mode, apiKey, model, onStatusUpdate }) {
+  async function requestGeminiApi({ prompt, currentCode, mode, apiKey, model, chatSession, onStatusUpdate }) {
     // 1. Ensure verified models are loaded
     let verified = config.availableModels;
     if (!verified || verified.length === 0) {
@@ -191,14 +205,16 @@ REGELN:
             currentCode,
             mode,
             apiKey,
-            model: currentModel
+            model: currentModel,
+            chatSession
           });
 
           if (res.success) {
             return {
               success: true,
               code: res.code,
-              modelUsed: currentModel
+              modelUsed: currentModel,
+              userInstruction: res.userInstruction
             };
           }
 
@@ -547,9 +563,12 @@ REGELN:
           <button class="p5-vibe-chip" data-prompt="Ein leuchtendes Partikelsystem, das einen Schweif hinter dem Mauszeiger herzieht">✨ Maus-Partikel</button>
         </div>
 
-        <!-- Prompt Header with History Button -->
+        <!-- Prompt Header with Chat Indicator and History Button -->
         <div class="p5-vibe-prompt-header">
-          <label for="p5-vibe-prompt-text" class="p5-vibe-prompt-label">Dein Prompt</label>
+          <div class="p5-vibe-prompt-label-group">
+            <label for="p5-vibe-prompt-text" class="p5-vibe-prompt-label">Dein Prompt</label>
+            <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="Aktiver Chat-Kontext (vorherige Prompts fließen mit ein)">💬 Neuer Chat</span>
+          </div>
           <button type="button" class="p5-vibe-btn-history" id="p5-vibe-btn-history" title="Verlauf bisheriger Prompts einsehen">
             🕒 Verlauf (<span id="p5-vibe-history-count">0</span>)
           </button>
@@ -784,6 +803,37 @@ REGELN:
     btnClose.addEventListener('click', minimizePanel);
     pill.addEventListener('click', expandPanel);
 
+    // Chat indicator UI
+    const chatIndicator = panel.querySelector('#p5-vibe-chat-indicator');
+
+    function updateChatIndicator() {
+      if (!chatIndicator) return;
+      const turnPairs = Math.floor(chatSession.length / 2);
+      if (turnPairs === 0) {
+        chatIndicator.className = 'p5-vibe-chat-pill';
+        chatIndicator.innerHTML = '💬 Neuer Chat';
+        chatIndicator.title = 'Erste Nachricht startet einen neuen Dialog';
+      } else {
+        chatIndicator.className = 'p5-vibe-chat-pill active';
+        chatIndicator.innerHTML = `💬 Chat (${turnPairs} ${turnPairs === 1 ? 'Runde' : 'Runden'}) <button type="button" class="p5-vibe-btn-reset-chat" id="p5-vibe-btn-reset-chat" title="Chat-Kontext zurücksetzen">×</button>`;
+        chatIndicator.title = `${turnPairs} vorherige Chat-Runden fließen als Kontext mit ein. Klicke × zum Zurücksetzen.`;
+
+        const btnReset = chatIndicator.querySelector('#p5-vibe-btn-reset-chat');
+        if (btnReset) {
+          btnReset.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetChatSession();
+          });
+        }
+      }
+    }
+
+    function resetChatSession() {
+      chatSession = [];
+      updateChatIndicator();
+      setStatus('Chat-Kontext zurückgesetzt. Neuer Dialog begonnen.', 'info');
+    }
+
     // Mode Switcher
     modeEditBtn.addEventListener('click', () => {
       activeMode = 'edit';
@@ -796,6 +846,7 @@ REGELN:
       activeMode = 'create';
       modeCreateBtn.classList.add('active');
       modeEditBtn.classList.remove('active');
+      resetChatSession();
       promptText.placeholder = 'Beschreibe eine völlig neue Idee für einen Sketch...';
     });
 
@@ -918,6 +969,12 @@ REGELN:
       if (codeHistory.length === 0) return;
       const prevCode = codeHistory.pop();
       updateUndoButtonState();
+
+      // Rewind chat context by one turn
+      if (chatSession.length >= 2) {
+        chatSession.splice(-2, 2);
+        updateChatIndicator();
+      }
       
       setStatus('Code wird wiederhergestellt...', 'loading');
       const success = await setEditorCode(prevCode);
@@ -978,7 +1035,7 @@ REGELN:
         // Read current editor code
         const currentCode = await getEditorCode();
 
-        // 1. Try direct API request from content script (with auto-fallback cascade)
+        // 1. Try direct API request from content script (with multi-turn chat context & auto-fallback)
         let response;
         try {
           response = await requestGeminiApi({
@@ -987,6 +1044,7 @@ REGELN:
             mode: activeMode,
             apiKey: config.apiKey,
             model: config.model,
+            chatSession: activeMode === 'create' ? [] : chatSession,
             onStatusUpdate: (msg) => setStatus(msg, 'loading')
           });
         } catch (directErr) {
@@ -998,11 +1056,26 @@ REGELN:
             currentCode: currentCode,
             mode: activeMode,
             apiKey: config.apiKey,
-            model: config.model
+            model: config.model,
+            chatSession: activeMode === 'create' ? [] : chatSession
           });
         }
 
         if (response && response.success && response.code) {
+          // Record conversational turn in chatSession for multi-turn chat
+          if (activeMode === 'create') {
+            chatSession = [];
+          }
+          chatSession.push(
+            { role: 'user', parts: [{ text: response.userInstruction || prompt }] },
+            { role: 'model', parts: [{ text: `\`\`\`javascript\n${response.code}\n\`\`\`` }] }
+          );
+          // Keep chat context bounded to last 10 messages (5 exchanges)
+          if (chatSession.length > 10) {
+            chatSession = chatSession.slice(-10);
+          }
+          updateChatIndicator();
+
           // Push previous code onto history for undo
           if (currentCode && currentCode.trim().length > 0) {
             codeHistory.push(currentCode);
