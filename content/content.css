@@ -339,6 +339,80 @@
   color: #fff;
 }
 
+.p5-vibe-prompt-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Auto-Play Toggle Switch */
+.p5-vibe-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--p5-vibe-text-muted);
+}
+
+.p5-vibe-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.p5-vibe-switch-slider {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 13px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.p5-vibe-switch-slider::before {
+  content: "";
+  position: absolute;
+  height: 9px;
+  width: 9px;
+  left: 1px;
+  top: 1px;
+  background-color: #94a3b8;
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.p5-vibe-switch input:checked + .p5-vibe-switch-slider {
+  background-color: rgba(16, 185, 129, 0.35);
+  border-color: rgba(16, 185, 129, 0.7);
+}
+
+.p5-vibe-switch input:checked + .p5-vibe-switch-slider::before {
+  transform: translateX(11px);
+  background-color: #34d399;
+}
+
+.p5-vibe-switch input:focus-visible + .p5-vibe-switch-slider {
+  box-shadow: 0 0 0 2px var(--p5-vibe-primary-glow);
+}
+
+.p5-vibe-switch-text {
+  font-size: 10.5px;
+  color: var(--p5-vibe-text-muted);
+  transition: color 0.15s ease;
+}
+
+.p5-vibe-switch input:checked ~ .p5-vibe-switch-text {
+  color: #e2e8f0;
+}
+
 .p5-vibe-history-drawer {
   display: none;
   flex-direction: column;
@@ -372,13 +446,19 @@
 .p5-vibe-btn-clear-history {
   background: none;
   border: none;
-  color: #ef4444;
+  color: #94a3b8;
   cursor: pointer;
   font-size: 10px;
+  font-weight: 500;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
 }
 
 .p5-vibe-btn-clear-history:hover {
-  text-decoration: underline;
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+  text-decoration: none;
 }
 
 .p5-vibe-history-list {

@@ -65,7 +65,7 @@ Da das Plugin lokal auf deinem Rechner liegt, kannst du es in Firefox in wenigen
    - Mit dem Verlauf-Button (🕒) oder den Pfeiltasten <kbd>↑</kbd> / <kbd>↓</kbd> im leeren Eingabefeld kannst du frühere Prompts durchblättern.
 4. Drücke <kbd>Cmd</kbd> + <kbd>Enter</kbd> oder klicke auf **⚡ Vibe Code**.
 5. Nach wenigen Sekunden wird der Code direkt in den CodeMirror-Editor eingefügt.
-6. Drücke im Webeditor auf den **Play-Button (▶)**, um deinen Sketch zu starten!
+6. **Auto-Play**: Bei aktiviertem Schiebeschalter (**Auto-Play**, standardmäßig aktiv) startet der Sketch sofort automatisch. Ist er deaktiviert, kannst du den Sketch manuell per Play-Button (▶) starten.
 
 ---
 

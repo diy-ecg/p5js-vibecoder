@@ -11,6 +11,7 @@
   let config = {
     apiKey: '',
     model: 'gemini-2.0-flash',
+    autoRun: true,
     isMinimized: false,
     availableModels: []
   };
@@ -530,6 +531,64 @@ REGELN:
     return false;
   }
 
+  /**
+   * Automatically start / run the sketch in the p5.js Web Editor
+   */
+  function triggerPlaySketch() {
+    try {
+      // 1. First look for official Play button selectors in p5.js web editor
+      const playSelectors = [
+        'button.toolbar__play-button',
+        'button[aria-label*="Play" i]',
+        'button[aria-label*="play" i]',
+        'button[aria-label*="Start" i]',
+        'button[title*="Play" i]',
+        'button[title*="Start" i]',
+        '.toolbar__play-button',
+        'header button[aria-label*="Play" i]',
+        'header button[aria-label*="Start" i]'
+      ];
+
+      for (const sel of playSelectors) {
+        const btn = document.querySelector(sel);
+        if (btn && typeof btn.click === 'function') {
+          btn.click();
+          return true;
+        }
+      }
+
+      // 2. Scan all header/toolbar buttons for play aria-label or title
+      const buttons = document.querySelectorAll('header button, nav button, .toolbar button, button');
+      for (const btn of buttons) {
+        const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
+        const title = (btn.getAttribute('title') || '').toLowerCase();
+        if (aria.includes('play') || title.includes('play') || aria.includes('start sketch') || title.includes('start sketch')) {
+          btn.click();
+          return true;
+        }
+      }
+
+      // 3. Fallback: Dispatch Cmd+Enter (Mac) or Ctrl+Enter (Win/Linux) shortcut
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const keyEvt = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+        cancelable: true,
+        metaKey: isMac,
+        ctrlKey: !isMac
+      });
+      const editorTarget = document.querySelector('.cm-content') || document.activeElement || document.body;
+      editorTarget.dispatchEvent(keyEvt);
+      return true;
+    } catch (err) {
+      console.warn('[p5-vibe] Error triggering sketch play:', err);
+      return false;
+    }
+  }
+
   // 3. UI Construction
   function createUI() {
     // Floating Pill (when minimized)
@@ -583,15 +642,22 @@ REGELN:
           </div>
         </div>
 
-        <!-- Prompt Header with Chat Indicator and History Button -->
+        <!-- Prompt Header with Chat Indicator, Auto-Play Switch and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
             <label for="p5-vibe-prompt-text" class="p5-vibe-prompt-label">Dein Prompt</label>
             <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="Aktiver Chat-Kontext (vorherige Prompts fließen mit ein)">💬 Neuer Chat</span>
           </div>
-          <button type="button" class="p5-vibe-btn-history" id="p5-vibe-btn-history" title="Verlauf bisheriger Prompts einsehen">
-            🕒 Verlauf (<span id="p5-vibe-history-count">0</span>)
-          </button>
+          <div class="p5-vibe-prompt-tools">
+            <label class="p5-vibe-switch" title="Auto-Play: Startet das p5.js Skript nach Generierung direkt (on/off)">
+              <input type="checkbox" id="p5-vibe-autorun-toggle" checked />
+              <span class="p5-vibe-switch-slider"></span>
+              <span class="p5-vibe-switch-text">Auto-Play</span>
+            </label>
+            <button type="button" class="p5-vibe-btn-history" id="p5-vibe-btn-history" title="Verlauf bisheriger Prompts einsehen">
+              🕒 Verlauf (<span id="p5-vibe-history-count">0</span>)
+            </button>
+          </div>
         </div>
 
         <!-- History Popover / Drawer -->
@@ -781,6 +847,16 @@ REGELN:
       saveSettings();
     });
 
+    // Auto-Play Toggle Switch
+    const autoRunToggle = panel.querySelector('#p5-vibe-autorun-toggle');
+    if (autoRunToggle) {
+      autoRunToggle.checked = config.autoRun;
+      autoRunToggle.addEventListener('change', () => {
+        config.autoRun = autoRunToggle.checked;
+        browser.storage.local.set({ p5VibeAutoRun: config.autoRun });
+      });
+    }
+
     function saveSettings() {
       browser.storage.local.set({
         geminiApiKey: config.apiKey,
@@ -957,7 +1033,14 @@ REGELN:
       setStatus('Code wird wiederhergestellt...', 'loading');
       const success = await setEditorCode(prevCode);
       if (success) {
-        setStatus('↩ Vorheriger Code wiederhergestellt!', 'success');
+        if (config.autoRun) {
+          setTimeout(() => {
+            triggerPlaySketch();
+          }, 180);
+          setStatus('↩ Vorheriger Code wiederhergestellt & Skript gestartet!', 'success');
+        } else {
+          setStatus('↩ Vorheriger Code wiederhergestellt!', 'success');
+        }
       } else {
         setStatus('Konnte Code nicht in Editor einfügen.', 'error');
       }
@@ -1065,10 +1148,20 @@ REGELN:
           const setSuccess = await setEditorCode(response.code);
 
           if (setSuccess) {
-            const modelNotice = response.modelUsed && response.modelUsed !== config.model 
-              ? ` (${formatModelName(response.modelUsed)})` 
-              : '';
-            setStatus(`✅ Code eingefügt!${modelNotice} Drücke jetzt auf ▶ Play im Webeditor.`, 'success');
+            if (config.autoRun) {
+              setTimeout(() => {
+                triggerPlaySketch();
+              }, 180);
+              const modelNotice = response.modelUsed && response.modelUsed !== config.model 
+                ? ` (${formatModelName(response.modelUsed)})` 
+                : '';
+              setStatus(`✅ Code eingefügt & Skript gestartet!${modelNotice}`, 'success');
+            } else {
+              const modelNotice = response.modelUsed && response.modelUsed !== config.model 
+                ? ` (${formatModelName(response.modelUsed)})` 
+                : '';
+              setStatus(`✅ Code eingefügt!${modelNotice} Drücke jetzt auf ▶ Play im Webeditor.`, 'success');
+            }
           } else {
             try {
               await navigator.clipboard.writeText(response.code);
@@ -1104,7 +1197,8 @@ REGELN:
       'geminiModel',
       'p5VibePosition',
       'p5VibeMinimized',
-      'p5VibePromptHistory'
+      'p5VibePromptHistory',
+      'p5VibeAutoRun'
     ]).then((data) => {
       const panel = document.getElementById('p5-vibe-panel');
       const pill = document.getElementById('p5-vibe-pill');
@@ -1112,6 +1206,16 @@ REGELN:
       const modelSelect = document.getElementById('p5-vibe-model-select');
       const modelLabel = document.getElementById('p5-vibe-model-label');
       const historyCount = document.getElementById('p5-vibe-history-count');
+      const autoRunToggle = document.getElementById('p5-vibe-autorun-toggle');
+
+      if (typeof data.p5VibeAutoRun === 'boolean') {
+        config.autoRun = data.p5VibeAutoRun;
+      } else {
+        config.autoRun = true; // default: ON
+      }
+      if (autoRunToggle) {
+        autoRunToggle.checked = config.autoRun;
+      }
 
       if (Array.isArray(data.p5VibePromptHistory)) {
         promptHistory = data.p5VibePromptHistory;
