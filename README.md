@@ -59,13 +59,13 @@ Da das Plugin lokal auf deinem Rechner liegt, kannst du es in Firefox in wenigen
 ## 🎨 So nutzt du das Vibe-Coding
 
 1. Navigiere zu [editor.p5js.org](https://editor.p5js.org/).
-2. Rechts oben siehst du das **p5 Vibe Coder** Panel.
-3. Wähle:
-   - Einen Inspirations-Chip oder
-   - Tippe deine Idee ein (z. B. *„Erstelle ein flüssiges Partikelsystem in WEBGL, das auf Mausbewegungen reagiert und bunte Spuren hinterlässt“*).
+2. Rechts oben siehst du das **p5.js Vibe Coder** Panel.
+3. Tippe deine Idee oder Anweisung ein (z. B. *„Erstelle ein flüssiges Partikelsystem in WEBGL, das auf Mausbewegungen reagiert und bunte Spuren hinterlässt“*).
+   - In Folge-Prompts kannst du einfach im Chat-Stil weitermachen (z. B. *„Mache es bitte grün“* oder *„Lass die Partikel langsamer fallen“*).
+   - Mit dem Verlauf-Button (🕒) oder den Pfeiltasten <kbd>↑</kbd> / <kbd>↓</kbd> im leeren Eingabefeld kannst du frühere Prompts durchblättern.
 4. Drücke <kbd>Cmd</kbd> + <kbd>Enter</kbd> oder klicke auf **⚡ Vibe Code**.
-5. Nach 1–2 Sekunden wird der fertige JavaScript-Code direkt in den Editor eingefügt.
-6. Drücke im Webeditor auf den **Play-Button (▶)**, um deinen Sketch zu genießen!
+5. Nach wenigen Sekunden wird der Code direkt in den CodeMirror-Editor eingefügt.
+6. Drücke im Webeditor auf den **Play-Button (▶)**, um deinen Sketch zu starten!
 
 ---
 

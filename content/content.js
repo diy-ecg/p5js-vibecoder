@@ -10,7 +10,7 @@
   // State
   let config = {
     apiKey: '',
-    model: 'gemini-3.8-flash',
+    model: 'gemini-2.0-flash',
     isMinimized: false,
     availableModels: []
   };
@@ -19,6 +19,41 @@
   let chatSession = []; // Multi-turn conversational memory
   let isGenerating = false;
   let pendingRequests = new Map();
+
+  /**
+   * Format Gemini model IDs to clean, human-readable display names
+   * e.g. 'gemini-2.0-flash' -> 'Gemini 2.0 Flash'
+   */
+  function formatModelName(modelId) {
+    if (!modelId) return 'Gemini';
+    const clean = modelId.replace(/^models\//, '');
+    if (clean === 'gemini-2.0-flash') return 'Gemini 2.0 Flash';
+    if (clean === 'gemini-3.8-flash') return 'Gemini 3.8 Flash';
+    if (clean === 'gemini-3.8-pro') return 'Gemini 3.8 Pro';
+    if (clean === 'gemini-1.5-flash') return 'Gemini 1.5 Flash';
+    if (clean === 'gemini-1.5-pro') return 'Gemini 1.5 Pro';
+    return clean
+      .split(/[-_]/)
+      .map(part => {
+        const lower = part.toLowerCase();
+        if (lower === 'gemini') return 'Gemini';
+        if (/^\d+(\.\d+)*$/.test(part)) return part;
+        return part.charAt(0).toUpperCase() + part.slice(1);
+      })
+      .join(' ');
+  }
+
+  /**
+   * Dynamically update the header model badge with the active/used model
+   */
+  function updateModelBadge(modelId) {
+    const label = document.getElementById('p5-vibe-model-label');
+    const target = modelId || config.model;
+    if (label && target) {
+      label.textContent = formatModelName(target);
+      label.title = `Aktives Modell: ${target}`;
+    }
+  }
 
   // 1. Inject Page Bridge
   function injectBridge() {
@@ -193,7 +228,7 @@ REGELN:
       const currentModel = queue[modelIdx];
 
       if (modelIdx > 0 && typeof onStatusUpdate === 'function') {
-        onStatusUpdate(`Wechsle zu Alternativ-Modell ${currentModel}...`);
+        onStatusUpdate(`Wechsle zu Alternativ-Modell ${formatModelName(currentModel)}...`);
       }
 
       // Try current model with exponential backoff for high demand (up to 3 attempts)
@@ -246,7 +281,7 @@ REGELN:
             if (attempt < maxAttempts) {
               const waitSec = attempt * 1.5;
               if (typeof onStatusUpdate === 'function') {
-                onStatusUpdate(`⏳ Lastspitze bei ${currentModel} – automatischer Versuch in ${waitSec}s (${attempt}/${maxAttempts})...`);
+                onStatusUpdate(`⏳ Lastspitze bei ${formatModelName(currentModel)} – automatischer Versuch in ${waitSec}s (${attempt}/${maxAttempts})...`);
               }
               await new Promise(r => setTimeout(r, waitSec * 1000));
               continue; // Retry same model
@@ -500,8 +535,8 @@ REGELN:
     // Floating Pill (when minimized)
     const pill = document.createElement('div');
     pill.id = 'p5-vibe-pill';
-    pill.innerHTML = `<span>⚡</span> <span>Vibe Coder</span>`;
-    pill.title = 'Klicken zum Öffnen des p5 Vibe Coder Panels';
+    pill.innerHTML = `<span>⚡</span> <span>p5.js Vibe Coder</span>`;
+    pill.title = 'Klicken zum Öffnen des p5.js Vibe Coder Panels';
     document.body.appendChild(pill);
 
     // Floating Main Panel
@@ -511,8 +546,8 @@ REGELN:
       <div class="p5-vibe-header" id="p5-vibe-drag-header">
         <div class="p5-vibe-title-group">
           <div class="p5-vibe-badge-logo">⚡</div>
-          <span class="p5-vibe-title">p5 Vibe Coder</span>
-          <span class="p5-vibe-model-tag" id="p5-vibe-model-label">Gemini 3.8</span>
+          <span class="p5-vibe-title">p5.js Vibe Coder</span>
+          <span class="p5-vibe-model-tag" id="p5-vibe-model-label">Gemini 2.0 Flash</span>
         </div>
         <div class="p5-vibe-actions">
           <button class="p5-vibe-icon-btn" id="p5-vibe-btn-settings" title="Einstellungen (API-Key)">⚙</button>
@@ -541,8 +576,8 @@ REGELN:
               <button type="button" class="p5-vibe-btn-refresh-models" id="p5-vibe-btn-refresh-models" title="Verfügbare Modelle für diesen Key prüfen">🔄 Modelle prüfen</button>
             </div>
             <select id="p5-vibe-model-select" class="p5-vibe-select">
-              <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
               <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
             </select>
             <span id="p5-vibe-model-info" style="font-size: 10px; color: var(--p5-vibe-text-muted); margin-top: 2px;"></span>
           </div>
@@ -713,7 +748,7 @@ REGELN:
       for (const m of models) {
         const opt = document.createElement('option');
         opt.value = m.id;
-        opt.textContent = m.displayName !== m.id ? `${m.displayName} (${m.id})` : m.id;
+        opt.textContent = m.displayName !== m.id ? `${m.displayName} (${m.id})` : formatModelName(m.id);
         if (m.id === currentSelected) {
           opt.selected = true;
         }
@@ -723,7 +758,7 @@ REGELN:
         modelSelect.value = models[0].id;
         config.model = models[0].id;
       }
-      updateModelBadge();
+      updateModelBadge(config.model);
       saveSettings();
     }
 
@@ -742,23 +777,9 @@ REGELN:
 
     modelSelect.addEventListener('change', () => {
       config.model = modelSelect.value;
-      updateModelBadge();
+      updateModelBadge(config.model);
       saveSettings();
     });
-
-    function updateModelBadge() {
-      if (config.model.includes('3.8-pro')) {
-        modelLabel.textContent = 'Gemini 3.8 Pro';
-      } else if (config.model.includes('3.8-flash')) {
-        modelLabel.textContent = 'Gemini 3.8 Flash';
-      } else if (config.model.includes('2.0')) {
-        modelLabel.textContent = 'Gemini 2.0 Flash';
-      } else if (config.model.includes('1.5')) {
-        modelLabel.textContent = 'Gemini 1.5 Flash';
-      } else {
-        modelLabel.textContent = 'Gemini';
-      }
-    }
 
     function saveSettings() {
       browser.storage.local.set({
@@ -986,7 +1007,7 @@ REGELN:
       btnGenerate.disabled = true;
       panel.querySelector('#p5-vibe-gen-icon').innerHTML = '<span class="p5-vibe-spinner"></span>';
       panel.querySelector('#p5-vibe-gen-text').textContent = 'Vibing...';
-      setStatus(`Gemini denkt nach (${config.model})...`, 'loading');
+      setStatus(`Gemini denkt nach (${formatModelName(config.model)})...`, 'loading');
 
       try {
         // Read current editor code
@@ -1017,6 +1038,11 @@ REGELN:
         }
 
         if (response && response.success && response.code) {
+          // Keep header badge updated with the exact model used
+          if (response.modelUsed) {
+            updateModelBadge(response.modelUsed);
+          }
+
           // Record conversational turn in chatSession for multi-turn chat
           chatSession.push(
             { role: 'user', parts: [{ text: response.userInstruction || prompt }] },
@@ -1040,7 +1066,7 @@ REGELN:
 
           if (setSuccess) {
             const modelNotice = response.modelUsed && response.modelUsed !== config.model 
-              ? ` (Fallback auf ${response.modelUsed})` 
+              ? ` (${formatModelName(response.modelUsed)})` 
               : '';
             setStatus(`✅ Code eingefügt!${modelNotice} Drücke jetzt auf ▶ Play im Webeditor.`, 'success');
           } else {
@@ -1114,9 +1140,7 @@ REGELN:
                 modelSelect.value = models[0].id;
                 config.model = models[0].id;
               }
-              if (modelLabel) {
-                modelLabel.textContent = config.model.replace(/^gemini-/, '').replace(/-/g, ' ');
-              }
+              updateModelBadge(config.model);
             }
           }
         });
@@ -1133,13 +1157,7 @@ REGELN:
         }
         if (modelSelect) modelSelect.value = m;
       }
-      if (modelLabel) {
-        if (config.model.includes('3.8-pro')) modelLabel.textContent = 'Gemini 3.8 Pro';
-        else if (config.model.includes('3.8-flash')) modelLabel.textContent = 'Gemini 3.8 Flash';
-        else if (config.model.includes('2.0')) modelLabel.textContent = 'Gemini 2.0 Flash';
-        else if (config.model.includes('1.5')) modelLabel.textContent = 'Gemini 1.5 Flash';
-        else modelLabel.textContent = 'Gemini';
-      }
+      updateModelBadge(config.model);
 
       if (data.p5VibePosition && panel) {
         if (data.p5VibePosition.left) panel.style.left = data.p5VibePosition.left;
