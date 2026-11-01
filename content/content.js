@@ -532,61 +532,212 @@ REGELN:
   }
 
   /**
+   * Find Play button via multiple resilient strategies
+   */
+  function findPlayButton() {
+    let btn = document.querySelector('[data-testid*="play" i], [data-testid*="start" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[aria-label*="start" i], button[aria-label*="play" i], [role="button"][aria-label*="start" i], [role="button"][aria-label*="play" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[title*="start" i], button[title*="play" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[class*="play" i], [class*="toolbar__play" i], [class*="play_button" i], [class*="play-button" i]');
+    if (btn) return btn;
+
+    // Proximity to Auto-refresh text
+    try {
+      const allElements = document.querySelectorAll('label, span, div, p');
+      for (const el of allElements) {
+        if (el.textContent && el.textContent.trim().toLowerCase().includes('auto-refresh')) {
+          let container = el.parentElement;
+          for (let depth = 0; depth < 5; depth++) {
+            if (!container) break;
+            const buttons = container.querySelectorAll('button');
+            if (buttons.length >= 1) return buttons[0];
+            container = container.parentElement;
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Top-left area button with SVG (<120px top, <300px left)
+    try {
+      const allButtons = document.querySelectorAll('button');
+      for (const b of allButtons) {
+        const rect = b.getBoundingClientRect();
+        if (rect.top >= 0 && rect.top < 120 && rect.left >= 0 && rect.left < 300) {
+          const svg = b.querySelector('svg');
+          if (svg) return b;
+        }
+      }
+    } catch (e) {}
+
+    return document.querySelector('.toolbar button, [class*="toolbar" i] button, nav button');
+  }
+
+  function findStopButton() {
+    let btn = document.querySelector('[data-testid*="stop" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[aria-label*="stop" i], [role="button"][aria-label*="stop" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[class*="stop" i], [class*="toolbar__stop" i], [class*="stop_button" i], [class*="stop-button" i]');
+    if (btn) return btn;
+
+    try {
+      const allElements = document.querySelectorAll('label, span, div, p');
+      for (const el of allElements) {
+        if (el.textContent && el.textContent.trim().toLowerCase().includes('auto-refresh')) {
+          let container = el.parentElement;
+          for (let depth = 0; depth < 5; depth++) {
+            if (!container) break;
+            const buttons = container.querySelectorAll('button');
+            if (buttons.length >= 2) return buttons[1];
+            container = container.parentElement;
+          }
+        }
+      }
+    } catch (e) {}
+
+    return null;
+  }
+
+  function activateElement(element) {
+    if (!element) return false;
+    const targets = [element, element.wrappedJSObject].filter(Boolean);
+    const win = window.wrappedJSObject || window;
+
+    // 1. Invoke React internal onClick directly
+    for (const t of targets) {
+      try {
+        for (const key of Object.keys(t)) {
+          if (key.startsWith('__reactProps$') || key.startsWith('__reactEventHandlers$') || key.startsWith('__reactFiber$')) {
+            const val = t[key];
+            const handler = val?.onClick || val?.memoizedProps?.onClick || val?.props?.onClick;
+            if (typeof handler === 'function') {
+              handler({
+                preventDefault: () => {},
+                stopPropagation: () => {},
+                target: t,
+                currentTarget: t,
+                bubbles: true
+              });
+              console.log('[p5-vibe] Invoked React onClick handler directly');
+            }
+          }
+        }
+      } catch (err) {}
+    }
+
+    // 2. Dispatch pointer & mouse events
+    for (const t of targets) {
+      try {
+        t.focus();
+        const eventTypes = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
+        for (const type of eventTypes) {
+          try {
+            const isPointer = type.startsWith('pointer');
+            const evt = isPointer
+              ? new win.PointerEvent(type, { bubbles: true, cancelable: true, composed: true, view: win, detail: 1, button: 0, buttons: 1 })
+              : new win.MouseEvent(type, { bubbles: true, cancelable: true, composed: true, view: win, detail: 1, button: 0, buttons: 1 });
+            t.dispatchEvent(evt);
+          } catch (e) {}
+        }
+      } catch (err) {}
+    }
+
+    // 3. Native .click()
+    for (const t of targets) {
+      try {
+        if (typeof t.click === 'function') t.click();
+      } catch (err) {}
+    }
+
+    return true;
+  }
+
+  function dispatchPlayShortcut() {
+    const win = window.wrappedJSObject || window;
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const eventInit = {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      view: win,
+      metaKey: isMac,
+      ctrlKey: !isMac
+    };
+
+    const targets = [
+      document.querySelector('.cm-content'),
+      document.querySelector('.cm-editor'),
+      document.activeElement,
+      document.body,
+      win.document,
+      win
+    ].filter(Boolean);
+
+    for (const t of targets) {
+      const unwrappedT = t.wrappedJSObject || t;
+      try {
+        unwrappedT.dispatchEvent(new win.KeyboardEvent('keydown', eventInit));
+        unwrappedT.dispatchEvent(new win.KeyboardEvent('keyup', eventInit));
+      } catch (e) {}
+    }
+  }
+
+  /**
    * Automatically start / run the sketch in the p5.js Web Editor
    */
   function triggerPlaySketch() {
+    console.log('[p5-vibe] Auto-Play trigger initiated');
+
+    // 1. Send action to page-bridge (executes in pure page context)
     try {
-      // 1. First look for official Play button selectors in p5.js web editor
-      const playSelectors = [
-        'button.toolbar__play-button',
-        'button[aria-label*="Play" i]',
-        'button[aria-label*="play" i]',
-        'button[aria-label*="Start" i]',
-        'button[title*="Play" i]',
-        'button[title*="Start" i]',
-        '.toolbar__play-button',
-        'header button[aria-label*="Play" i]',
-        'header button[aria-label*="Start" i]'
-      ];
+      sendBridgeAction('PLAY_SKETCH');
+    } catch (e) {}
 
-      for (const sel of playSelectors) {
-        const btn = document.querySelector(sel);
-        if (btn && typeof btn.click === 'function') {
-          btn.click();
-          return true;
-        }
-      }
-
-      // 2. Scan all header/toolbar buttons for play aria-label or title
-      const buttons = document.querySelectorAll('header button, nav button, .toolbar button, button');
-      for (const btn of buttons) {
-        const aria = (btn.getAttribute('aria-label') || '').toLowerCase();
-        const title = (btn.getAttribute('title') || '').toLowerCase();
-        if (aria.includes('play') || title.includes('play') || aria.includes('start sketch') || title.includes('start sketch')) {
-          btn.click();
-          return true;
-        }
-      }
-
-      // 3. Fallback: Dispatch Cmd+Enter (Mac) or Ctrl+Enter (Win/Linux) shortcut
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const keyEvt = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
-        which: 13,
-        bubbles: true,
-        cancelable: true,
-        metaKey: isMac,
-        ctrlKey: !isMac
-      });
-      const editorTarget = document.querySelector('.cm-content') || document.activeElement || document.body;
-      editorTarget.dispatchEvent(keyEvt);
-      return true;
-    } catch (err) {
-      console.warn('[p5-vibe] Error triggering sketch play:', err);
-      return false;
+    // 2. Check if previous sketch is currently running (Stop button active)
+    const stopBtn = findStopButton();
+    let isStopActive = false;
+    if (stopBtn) {
+      const bg = getComputedStyle(stopBtn).backgroundColor || '';
+      isStopActive = stopBtn.classList.contains('active') ||
+                     (stopBtn.className || '').includes('active') ||
+                     bg.includes('237') ||
+                     bg.includes('255');
     }
+
+    if (isStopActive) {
+      console.log('[p5-vibe] Sketch currently running. Stopping first for clean restart...');
+      activateElement(stopBtn);
+      setTimeout(() => {
+        executePlay();
+      }, 100);
+    } else {
+      executePlay();
+    }
+
+    function executePlay() {
+      const playBtn = findPlayButton();
+      if (playBtn) {
+        console.log('[p5-vibe] Found Play button, activating:', playBtn);
+        activateElement(playBtn);
+      } else {
+        console.warn('[p5-vibe] Play button not located directly, using shortcut fallback');
+      }
+      dispatchPlayShortcut();
+    }
+
+    return true;
   }
 
   // 3. UI Construction
@@ -1151,7 +1302,10 @@ REGELN:
             if (config.autoRun) {
               setTimeout(() => {
                 triggerPlaySketch();
-              }, 180);
+              }, 100);
+              setTimeout(() => {
+                triggerPlaySketch();
+              }, 300);
               const modelNotice = response.modelUsed && response.modelUsed !== config.model 
                 ? ` (${formatModelName(response.modelUsed)})` 
                 : '';

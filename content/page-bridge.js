@@ -131,6 +131,139 @@
     return false;
   }
 
+  /**
+   * Find the Play button in the p5.js Web Editor toolbar
+   */
+  function findPlayButton() {
+    let btn = document.querySelector('[data-testid*="play" i], [data-testid*="start" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[aria-label*="start" i], button[aria-label*="play" i], [role="button"][aria-label*="start" i], [role="button"][aria-label*="play" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[title*="start" i], button[title*="play" i]');
+    if (btn) return btn;
+
+    btn = document.querySelector('button[class*="play" i], [class*="toolbar__play" i], [class*="play_button" i], [class*="play-button" i]');
+    if (btn) return btn;
+
+    try {
+      const allElements = document.querySelectorAll('label, span, div, p');
+      for (const el of allElements) {
+        if (el.textContent && el.textContent.trim().toLowerCase().includes('auto-refresh')) {
+          let container = el.parentElement;
+          for (let depth = 0; depth < 5; depth++) {
+            if (!container) break;
+            const buttons = container.querySelectorAll('button');
+            if (buttons.length >= 1) return buttons[0];
+            container = container.parentElement;
+          }
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const allButtons = document.querySelectorAll('button');
+      for (const b of allButtons) {
+        const rect = b.getBoundingClientRect();
+        if (rect.top >= 0 && rect.top < 120 && rect.left >= 0 && rect.left < 300) {
+          const svg = b.querySelector('svg');
+          if (svg) return b;
+        }
+      }
+    } catch (e) {}
+
+    return document.querySelector('.toolbar button, [class*="toolbar" i] button, nav button');
+  }
+
+  /**
+   * Activate element via React internal handlers, mouse events and native click
+   */
+  function activateElement(el) {
+    if (!el) return false;
+
+    // React Fiber / Props onClick
+    try {
+      for (const key of Object.keys(el)) {
+        if (key.startsWith('__reactProps$') || key.startsWith('__reactEventHandlers$') || key.startsWith('__reactFiber$')) {
+          const val = el[key];
+          const handler = val?.onClick || val?.memoizedProps?.onClick || val?.props?.onClick;
+          if (typeof handler === 'function') {
+            handler({
+              preventDefault: () => {},
+              stopPropagation: () => {},
+              target: el,
+              currentTarget: el,
+              bubbles: true
+            });
+            console.log('[p5-vibe-bridge] Invoked React onClick directly');
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Pointer and mouse events
+    try {
+      el.focus();
+      const eventTypes = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
+      for (const type of eventTypes) {
+        try {
+          const isPointer = type.startsWith('pointer');
+          const evt = isPointer
+            ? new PointerEvent(type, { bubbles: true, cancelable: true, composed: true, view: window, detail: 1, button: 0, buttons: 1 })
+            : new MouseEvent(type, { bubbles: true, cancelable: true, composed: true, view: window, detail: 1, button: 0, buttons: 1 });
+          el.dispatchEvent(evt);
+        } catch (e) {}
+      }
+    } catch (e) {}
+
+    try { el.click(); } catch (e) {}
+    return true;
+  }
+
+  /**
+   * Dispatch Cmd+Enter (Mac) or Ctrl+Enter (Win) shortcut
+   */
+  function dispatchPlayShortcut() {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const eventInit = {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      view: window,
+      metaKey: isMac,
+      ctrlKey: !isMac
+    };
+
+    const targets = [
+      document.querySelector('.cm-content'),
+      document.querySelector('.cm-editor'),
+      document.activeElement,
+      document.body,
+      window
+    ].filter(Boolean);
+
+    for (const t of targets) {
+      try {
+        t.dispatchEvent(new KeyboardEvent('keydown', eventInit));
+        t.dispatchEvent(new KeyboardEvent('keyup', eventInit));
+      } catch (e) {}
+    }
+  }
+
+  function triggerPlayInPage() {
+    const playBtn = findPlayButton();
+    if (playBtn) {
+      activateElement(playBtn);
+    }
+    dispatchPlayShortcut();
+    return true;
+  }
+
   // Handle messages from the extension content script
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data || event.data.target !== 'p5-vibe-bridge') {
@@ -149,6 +282,13 @@
       }, '*');
     } else if (action === 'SET_CODE') {
       const ok = setCode(code);
+      window.postMessage({
+        source: 'p5-vibe-bridge',
+        requestId: requestId,
+        success: ok
+      }, '*');
+    } else if (action === 'PLAY_SKETCH') {
+      const ok = triggerPlayInPage();
       window.postMessage({
         source: 'p5-vibe-bridge',
         requestId: requestId,
