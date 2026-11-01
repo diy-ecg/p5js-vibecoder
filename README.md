@@ -1,92 +1,142 @@
 # ⚡ p5.js Vibe Coder (Firefox Extension)
 
-Ein Firefox-Plugin für **Vibe-Coding** direkt im offiziellen Webeditor von [p5.js](https://editor.p5js.org/).
+[![GitHub](https://img.shields.io/badge/GitHub-diy--ecg%2Fp5js--vibecoder-181717?logo=github)](https://github.com/diy-ecg/p5js-vibecoder)
+[![Firefox Add-on](https://img.shields.io/badge/Platform-Firefox%20WebExtension%20(MV3)-FF7139?logo=firefox-browser)](https://editor.p5js.org/)
+[![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-4285F4?logo=google)](https://aistudio.google.com/)
+[![Language](https://img.shields.io/badge/Language-Deutsch%20%7C%20English-blue)](#-zweisprachig--bilingual-de--en)
 
-Gib einfach auf Deutsch oder Englisch ein, was du programmieren oder ändern möchtest. Die Google Gemini KI generiert den vollständigen p5.js-Code und fügt ihn direkt in dein Editorfenster ein – du musst nur noch auf den **Play-Button (▶)** drücken!
+Ein leistungsstarkes Browser-Plug-In für **Vibe-Coding** direkt im offiziellen [p5.js Webeditor](https://editor.p5js.org/).
+
+Tippe einfach auf Deutsch oder Englisch ein, was du visualisieren oder ändern möchtest. Google Gemini generiert in Sekundenschnelle den p5.js-Code und überträgt ihn direkt in deinen CodeMirror-Editor – inklusive automatischem Start des Sketches!
 
 ---
 
-## 🚀 Features
+## 🚀 Features & Highlights
 
-- **Schwebendes Panel (Floating Panel)**: Frei über den Webeditor verschiebbar (Drag & Drop am Header) und minimierbar zu einem dezenten Badge.
-- **Google Gemini Anbindung**: Unterstützt **Gemini 3.8 Flash** (schnell & smart) und **Gemini 3.8 Pro** (für komplexe 3D- & Mathe-Sketche).
-- **💬 Echter Multi-Turn Chat & Schlankes Interface**:
-  - Nahtloser Workflow ohne manuelle Modus-Schalter: Das Plugin erkennt automatisch den bestehenden Code im Editor und passt ihn an bzw. baut bei leerem Editor von Grund auf neu.
-  - Die KI behält den gesamten Dialog-Verlauf im Gedächtnis (*„Mache es grün“*, *„Lass es pulsieren“* etc.).
-  - Mit dem kleinen **`×`**-Reset auf der Chat-Pille startest du jederzeit einen frischen Dialog für eine neue Idee.
-- **↩ Undo-Funktion**: Macht die letzte KI-Änderung mit einem Klick rückgängig – und spult gleichzeitig auch das Gedächtnis des Chats um eine Runde zurück!
-- **🕒 Prompt-Verlauf (History)**:
-  - Speichert deine letzten Prompts dauerhaft im Browser.
-  - Klickbarer **„🕒 Verlauf“**-Button mit Liste aller bisherigen Prompts zum schnellen Wiederverwenden.
-  - Wie im Terminal: Mit <kbd>↑</kbd> und <kbd>↓</kbd> im Textfeld direkt durch frühere Prompts blättern!
-- **▶️ Auto-Play Schalter**:
-  - Direkt neben dem Verlauf: Schalter auf **ON** (Standard) startet den generierten Sketch sofort automatisch im p5-Viewer.
-  - Auf **OFF** hast du die manuelle Kontrolle per Klick auf den Play-Button.
-- **🌍 Zweisprachig (Deutsch & Englisch)**:
-  - Umschalter direkt in den Einstellungen (sowohl im schwebenden Panel als auch im Toolbar-Popup).
-  - Alle Oberflächenelemente, Statusmeldungen, Fehlerhinweise und KI-Systemanweisungen passen sich sofort dynamisch an.
-- **Tastatur-Kürzel**:
-  - <kbd>Strg</kbd> + <kbd>Enter</kbd> (bzw. <kbd>Cmd</kbd> + <kbd>Enter</kbd> auf Mac): Prompt sofort abschicken & generieren.
-  - <kbd>Alt</kbd> + <kbd>V</kbd>: Panel ein- oder ausblenden.
+### 💬 Multi-Turn Chat & Intelligenter Kontext
+- **Kein manuelles Umschalten nötig**: Erkennt automatisch, ob du an einem bestehenden Sketch weiterbaust oder bei leerem Editor von Grund auf neu beginnst.
+- **Konversations-Gedächtnis**: Gemini behält die letzten Dialog-Runden im Gedächtnis (*„Mache es grün“*, *„Lass die Partikel langsamer fallen“*).
+- **Neuer Chat (`×`)**: Setzt das Chat-Gedächtnis mit einem Klick zurück, um ein frisches Projekt ohne Altlasten zu starten.
+- **Sauberes Eingabefeld**: Das Prompt-Feld leert sich nach dem Absenden automatisch, damit du direkt deine nächste Idee eingeben kannst.
+
+### ▶️ Auto-Play mit React- & Fiber-Bridge
+- **Direktes Starten**: Der generierte Sketch wird sofort im Vorschaufenster gerendert – kein manueller Klick auf den Play-Button mehr nötig.
+- **Ein-/Ausschalter**: Direkt neben dem Verlauf kann der Auto-Play-Modus per Schiebeschalter (standardmäßig *ON*) jederzeit auf *OFF* gestellt werden.
+- **Robuste Ausführung**: Nutzt ein mehrstufiges Event-System (React 18 Fiber-Dispatch, PointerEvents und Tastatur-Shortcuts), um Firefox-Sandbox-Restriktionen nahtlos zu überwinden.
+
+### ↩ 1-Klick Undo
+- Setzt den Editor mit einem Klick auf die vorherige Code-Version zurück.
+- Spult gleichzeitig auch das Chat-Gedächtnis um eine Runde zurück, damit der Dialog konsistent bleibt.
+
+### 🕒 Lokaler Prompt-Verlauf (History)
+- Speichert deine letzten 50 Prompts dauerhaft im Browser (`browser.storage.local`).
+- Klickbarer **„🕒 Verlauf“**-Button mit Übersicht und Schnellübernahme.
+- **Terminal-Style**: Mit den Pfeiltasten <kbd>↑</kbd> und <kbd>↓</kbd> im leeren Eingabefeld kannst du direkt durch deine früheren Prompts blättern.
+
+### 🌍 Zweisprachig / Bilingual (DE / EN)
+- Umschaltbar zwischen **🇩🇪 Deutsch** und **🇬🇧 English** direkt in den Einstellungen.
+- Alle Buttons, Labels, Fehlermeldungen, Status-Texte und Gemini-Systemprompts passen sich in Echtzeit an.
+- Voll synchronisiert zwischen In-Page-Panel und Toolbar-Popup.
+
+### ⚡ Live-Modell-Erkennung & Fallback
+- Erkennt automatisch die für deinen API-Key freigeschalteten Gemini-Modelle (**Gemini 2.0 Flash**, **Gemini 3.8 Flash**, **Gemini 3.8 Pro**, etc.).
+- **Automatischer Cascade-Fallback**: Weicht bei vorübergehender Auslastung eines Modells automatisch auf alternative Modelle aus.
+- Dynamische Anzeige des aktuell aktiven Modells direkt im Header-Badge.
+
+### 🎨 Ergonomisches Dark UI
+- Frei verschiebbar über die gesamte Zeichenfläche (Drag & Drop am Header).
+- Mit einem Klick oder per Tastaturkürzel (<kbd>Alt</kbd> + <kbd>V</kbd>) zu einem dezenten Badge minimierbar.
+- Speichert Fensterposition und Minimierungsstatus automatisch.
+
+---
+
+## 🧠 Wichtige Erkenntnisse & Best Practices
+
+### Das 8.192 Token-Ausgabelimit bei großen Sketchen
+
+| Parameter | Gemini Limit | Bedeutung für p5.js |
+| :--- | :--- | :--- |
+| **Input Context** | Bis zu 1.000.000 Tokens | Riesig – Gemini kann auch 10.000 Zeilen bestehenden Code problemlos lesen. |
+| **Output Limit** | **8.192 Tokens** (ca. 500–600 Zeilen) | Die maximale Ausgabelänge pro Antwort ist durch die Google API strikt gedeckelt. |
+
+#### Warum brechen Skripte ab ~600 Zeilen ab?
+Da der Vibe-Coder Gemini anweist, den *vollständigen, sofort lauffähigen Code* zurückzugeben, muss die KI bei jeder Änderung den gesamten Sketch neu formulieren. Bei etwa 500 bis 600 Zeilen (inkl. Einrückungen, mathematischen Formeln und Kommentaren) erreicht die Antwort exakt **8.192 Tokens** und Google schneidet die Übertragung abrupt ab (`finishReason: "MAX_TOKENS"`).
+
+#### Integrierter Schutz im Plugin:
+1. **Truncation-Erkennung**: Das Plug-In erkennt das `MAX_TOKENS`-Signal sofort.
+2. **Auto-Play-Schutz**: Unvollständiger Code wird **nicht** gestartet, um Abstürze im p5-Viewer zu verhindern.
+3. **Markdown-Säuberung**: Verhindert, dass abgebrochene Code-Fences (````) als Syntaxfehler im Editor landen.
+4. **Warnung & Undo**: Zeigt eine deutliche Warnmeldung an – mit `↩ Undo` stellst du deinen funktionierenden Code sofort wieder her.
+5. **Token-Effizienz**: Der System-Prompt weist Gemini an, bei umfangreichen Sketchen auf überflüssige Kommentare zu verzichten und kompakten, token-sparenden Code zu schreiben.
+
+#### 💡 Tipps für große Projekte (> 500 Zeilen):
+- **Refactoring-Prompt**: Bitte Gemini vorab: *„Fasse wiederkehrende Logik in kompakte Hilfsfunktionen zusammen und halte den Code prägnant.“*
+- **Dateien aufteilen (Sketch Files)**: Im p5.js Editor links auf den Pfeil neben *Sketch Files* klicken und Klassen (z. B. `Particle.js`, `Physics.js`) in eigene Dateien auslagern. So bleibt die Hauptdatei `sketch.js` immer schlank und weit unter dem Token-Limit.
+
+---
+
+## ⌨️ Tastatur-Kürzel
+
+| Tastenkürzel | Funktion |
+| :--- | :--- |
+| <kbd>Strg</kbd> + <kbd>Enter</kbd> / <kbd>Cmd</kbd> + <kbd>Enter</kbd> | Prompt abschicken & Code generieren |
+| <kbd>↑</kbd> / <kbd>↓</kbd> (im leeren Promptfeld) | Durch bisherige Prompts aus dem Verlauf blättern |
+| <kbd>Alt</kbd> + <kbd>V</kbd> | Panel ein- oder ausblenden / minimieren |
 
 ---
 
 ## 🛠️ Installation in Mozilla Firefox
 
-Da das Plugin lokal auf deinem Rechner liegt, kannst du es in Firefox in wenigen Sekunden als temporäre Erweiterung laden:
+Da die Erweiterung quelloffen als lokale WebExtension (Manifest V3) vorliegt, kannst du sie in Firefox innerhalb von 30 Sekunden installieren:
 
-1. Öffne Firefox und tippe in die Adressleiste:
+1. Klone das Repository oder lade es als ZIP herunter:
+   ```bash
+   git clone https://github.com/diy-ecg/p5js-vibecoder.git
+   ```
+2. Öffne Firefox und navigiere zu:
    ```text
    about:debugging#/runtime/this-firefox
    ```
-2. Klicke auf die Schaltfläche **„Temporäres Add-on laden...“** (Load Temporary Add-on).
-3. Wähle im Dateidialog die Datei **`manifest.json`** im Ordner:
-   ```text
-   /Users/bongartz/Documents/Antigravity/p5-Assistant/manifest.json
-   ```
-4. Das Plugin ist nun sofort in Firefox aktiv! 🎉
+3. Klicke auf die Schaltfläche **„Temporäres Add-on laden...“** (Load Temporary Add-on).
+4. Wähle die Datei **`manifest.json`** im geklonten Projektordner aus.
+5. Das Plug-In ist sofort aktiv! 🎉
 
 ---
 
 ## 🔑 Gemini API-Key einrichten
 
-1. Falls du noch keinen Gemini API-Key hast, erstelle dir kostenlos einen auf [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Öffne den Webeditor: [editor.p5js.org](https://editor.p5js.org/)
-3. Im schwebenden Panel oben rechts auf das **Zahnrad-Symbol (⚙)** klicken.
-4. Trage deinen API-Key ein. Er wird sicher lokal im Speicher deines Firefox-Profils gespeichert.
-
----
-
-## 🎨 So nutzt du das Vibe-Coding
-
-1. Navigiere zu [editor.p5js.org](https://editor.p5js.org/).
-2. Rechts oben siehst du das **p5.js Vibe Coder** Panel.
-3. Tippe deine Idee oder Anweisung ein (z. B. *„Erstelle ein flüssiges Partikelsystem in WEBGL, das auf Mausbewegungen reagiert und bunte Spuren hinterlässt“*).
-   - In Folge-Prompts kannst du einfach im Chat-Stil weitermachen (z. B. *„Mache es bitte grün“* oder *„Lass die Partikel langsamer fallen“*).
-   - Mit dem Verlauf-Button (🕒) oder den Pfeiltasten <kbd>↑</kbd> / <kbd>↓</kbd> im leeren Eingabefeld kannst du frühere Prompts durchblättern.
-4. Drücke <kbd>Cmd</kbd> + <kbd>Enter</kbd> oder klicke auf **⚡ Vibe Code**.
-5. Nach wenigen Sekunden wird der Code direkt in den CodeMirror-Editor eingefügt.
-6. **Auto-Play**: Bei aktiviertem Schiebeschalter (**Auto-Play**, standardmäßig aktiv) startet der Sketch sofort automatisch. Ist er deaktiviert, kannst du den Sketch manuell per Play-Button (▶) starten.
+1. Erstelle dir kostenlos einen API-Key bei [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Öffne den p5.js Webeditor: [editor.p5js.org](https://editor.p5js.org/).
+3. Klicke im p5.js Vibe Coder Panel oben rechts auf das **Zahnrad-Symbol (⚙)**.
+4. Trage deinen API-Key ein. Er wird ausschließlich lokal im sicheren Speicher deines Firefox-Profils abgelegt.
+5. Klicke auf **„🔄 Modelle prüfen“**, um die für deinen Key freigeschalteten Modelle zu laden.
 
 ---
 
 ## 📁 Projektstruktur
 
 ```text
-p5-Assistant/
-├── manifest.json         # Firefox WebExtension Konfiguration (MV3)
-├── background.js         # Service Worker / API-Kommunikation mit Gemini
+p5js-vibecoder/
+├── manifest.json         # Firefox WebExtension Konfiguration (Manifest V3)
+├── background.js         # Service Worker & Fallback-API-Kommunikation mit Gemini
 ├── content/
-│   ├── content.js        # Floating UI Panel Logik & Event-Handling
-│   ├── content.css       # Styling & Animationen des Panels
-│   └── page-bridge.js    # Direkte Anbindung an den CodeMirror-Editor
+│   ├── content.js        # Floating UI Panel Logik, i18n, Event-Handling & API-Client
+│   ├── content.css       # Stylesheets, Dark-Theme, Animationen & Layout
+│   └── page-bridge.js    # Unsanboxed Page-Script zur Interaktion mit CodeMirror & React
 ├── popup/
-│   ├── popup.html        # Toolbar-Popup für Einstellungen
+│   ├── popup.html        # Toolbar-Popup für Einstellungen & Sprache
 │   ├── popup.css         # Styling des Popups
-│   └── popup.js          # Logik des Popups
+│   └── popup.js          # Synchronisierte Einstellungslogik
 ├── icons/
 │   ├── icon-16.png
 │   ├── icon-48.png
 │   └── icon-128.png
 └── README.md
 ```
+
+---
+
+## 📄 Lizenz
+
+Open Source – lizenziert unter der [MIT License](LICENSE).
+Beiträge, Feedback und Issue-Reports sind herzlich willkommen!
