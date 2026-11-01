@@ -1,13 +1,13 @@
 # ⚡ p5.js Vibe Coder (Browser Extension)
 
 [![GitHub](https://img.shields.io/badge/GitHub-diy--ecg%2Fp5js--vibecoder-181717?logo=github)](https://github.com/diy-ecg/p5js-vibecoder)
-[![Browsers](https://img.shields.io/badge/Browsers-Firefox%20%7C%20Chrome%20%7C%20Brave%20%7C%20Edge-success?logo=googlechrome)](https://editor.p5js.org/)
+[![Browsers](https://img.shields.io/badge/Browsers-Chrome%20%7C%20Brave%20%7C%20Edge%20%7C%20Firefox-success?logo=googlechrome)](https://editor.p5js.org/)
 [![Manifest V3](https://img.shields.io/badge/Platform-WebExtension%20(MV3)-blue)](#-installation-guide)
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-4285F4?logo=google)](https://aistudio.google.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Bilingual](https://img.shields.io/badge/Language-English%20%7C%20Deutsch-blue)](#-bilingual-support-en--de)
 
-A cross-browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/). Works seamlessly in **Mozilla Firefox**, **Google Chrome**, **Brave**, **Microsoft Edge**, and other Chromium-based browsers.
+A cross-browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/). Built for equal, first-class performance across **Google Chrome**, **Brave**, **Microsoft Edge**, **Mozilla Firefox**, **Opera**, and other modern browsers.
 
 Simply type what you want to visualize, build, or modify in natural language. Powered by **Google Gemini**, the extension generates production-ready p5.js code in seconds, injects it straight into your CodeMirror editor, and automatically runs your sketch!
 
@@ -24,14 +24,14 @@ Simply type what you want to visualize, build, or modify in natural language. Po
 ### ▶️ Instant Auto-Play with React & Fiber Bridge
 - **Immediate Visual Feedback**: The generated sketch automatically starts running in the preview window as soon as generation completes — no need to manually click the Play button.
 - **On/Off Toggle**: A dedicated switch in the HUD header lets you disable or enable Auto-Play at any time (defaults to **ON**).
-- **Bulletproof Execution**: Leverages a multi-stage execution bridge (React 18 Fiber dispatch, synthetic PointerEvents, and keyboard shortcuts) that reliably triggers execution across Firefox sandbox boundaries.
+- **Bulletproof Execution**: Leverages a multi-stage execution bridge (React 18 Fiber dispatch, synthetic PointerEvents, and keyboard shortcuts) that reliably triggers execution across browser sandbox and extension isolation boundaries.
 
 ### ↩ 1-Click Undo
 - Restore your previous code version with a single click on the `↩ Undo` button.
 - Simultaneously rolls back conversational history by one turn, ensuring your AI dialog stays synchronized with your editor state.
 
 ### 🕒 Local Prompt History
-- Automatically records your last 50 prompts in local browser storage (`browser.storage.local`).
+- Automatically records your last 50 prompts in local browser storage (`storage.local`).
 - **History Modal**: Click the **"🕒 History"** button to review past prompts, copy them, or load them back into the editor with one click.
 - **Terminal-Style Navigation**: Press the <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys inside an empty prompt input to quickly cycle through previous prompts.
 
@@ -89,33 +89,37 @@ To guarantee complete code integrity, p5.js Vibe Coder instructs Gemini to alway
 
 ## 🛠️ Installation Guide
 
-The extension is open-source and built on Manifest V3. Thanks to its universal cross-browser architecture, it runs without modifications in **Firefox** and any **Chromium-based browser**:
+The extension is fully open-source and built on the cross-browser Manifest V3 standard. It is natively compatible with both **Chromium-based browsers** and **Mozilla Firefox**.
 
-### 🦊 Mozilla Firefox
-1. Clone the repository or download it as a ZIP:
-   ```bash
-   git clone https://github.com/diy-ecg/p5js-vibecoder.git
-   ```
-2. In Firefox, open a new tab and navigate to:
-   ```text
-   about:debugging#/runtime/this-firefox
-   ```
-3. Click **"Load Temporary Add-on..."**.
-4. In the file picker, select the **`manifest.json`** file inside the project directory.
+### 1. Clone or Download
+```bash
+git clone https://github.com/diy-ecg/p5js-vibecoder.git
+```
+*(Or click **Code → Download ZIP** on GitHub and extract the folder).*
 
 ---
 
-### 🌐 Google Chrome, Brave, Microsoft Edge & Opera
-1. Clone the repository or download it as a ZIP (if not already done).
-2. Open your browser's extension management page:
-   - **Chrome**: `chrome://extensions`
+### 🌐 Chromium Browsers (Google Chrome, Brave, Microsoft Edge, Opera, Arc)
+1. Open your browser's extensions manager:
+   - **Google Chrome**: `chrome://extensions`
    - **Brave**: `brave://extensions`
-   - **Edge**: `edge://extensions`
-   - **Opera**: `opera://extensions`
-3. Enable the **"Developer mode"** toggle (usually in the top right or sidebar).
-4. Click **"Load unpacked"** (or *Entpackte Erweiterung laden*).
-5. Select the cloned **`p5js-vibecoder`** root folder.
-6. The extension is immediately loaded and active! 🎉
+   - **Microsoft Edge**: `edge://extensions`
+   - **Opera / Opera GX**: `opera://extensions`
+2. Enable the **"Developer mode"** toggle (top right or left sidebar).
+3. Click **"Load unpacked"** (or *Entpackte Erweiterung laden*).
+4. Select the downloaded/cloned **`p5js-vibecoder`** directory.
+5. The extension is installed and ready to go! 🎉
+
+---
+
+### 🦊 Mozilla Firefox
+1. Open Firefox and navigate to:
+   ```text
+   about:debugging#/runtime/this-firefox
+   ```
+2. Click **"Load Temporary Add-on..."**.
+3. Select the **`manifest.json`** file inside the **`p5js-vibecoder`** directory.
+4. The extension is installed and ready to go! 🎉
 
 ---
 
@@ -133,8 +137,8 @@ The extension is open-source and built on Manifest V3. Thanks to its universal c
 
 ```text
 p5js-vibecoder/
-├── manifest.json         # WebExtension configuration (Manifest V3)
-├── background.js         # Service worker & Gemini API communication bridge
+├── manifest.json         # Universal WebExtension manifest (Manifest V3 for Chromium & Firefox)
+├── background.js         # Service Worker (Chromium) / Event Page (Firefox) & Gemini API bridge
 ├── content/
 │   ├── content.js        # Floating HUD logic, i18n, event handlers & API client
 │   ├── content.css       # Ergonomic dark theme, animations & responsive styling
