@@ -762,7 +762,6 @@ REGELN:
         <div class="p5-vibe-actions">
           <button class="p5-vibe-icon-btn" id="p5-vibe-btn-settings" title="Einstellungen (API-Key)">⚙</button>
           <button class="p5-vibe-icon-btn" id="p5-vibe-btn-minimize" title="Minimieren">−</button>
-          <button class="p5-vibe-icon-btn" id="p5-vibe-btn-close" title="Schließen">×</button>
         </div>
       </div>
 
@@ -796,7 +795,6 @@ REGELN:
         <!-- Prompt Header with Chat Indicator, Auto-Play Switch and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
-            <label for="p5-vibe-prompt-text" class="p5-vibe-prompt-label">Dein Prompt</label>
             <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="Aktiver Chat-Kontext (vorherige Prompts fließen mit ein)">💬 Neuer Chat</span>
           </div>
           <div class="p5-vibe-prompt-tools">
@@ -825,7 +823,6 @@ REGELN:
           <textarea 
             id="p5-vibe-prompt-text" 
             class="p5-vibe-textarea" 
-            placeholder="Was möchtest du vibecoden? (z.B. Mach die Kreise größer und füge Musikreaktion oder Farbwechsel hinzu...)"
             rows="3"
           ></textarea>
         </div>
@@ -864,7 +861,6 @@ REGELN:
     const modelSelect = panel.querySelector('#p5-vibe-model-select');
     const modelLabel = panel.querySelector('#p5-vibe-model-label');
     const btnMinimize = panel.querySelector('#p5-vibe-btn-minimize');
-    const btnClose = panel.querySelector('#p5-vibe-btn-close');
     const promptText = panel.querySelector('#p5-vibe-prompt-text');
     const btnGenerate = panel.querySelector('#p5-vibe-btn-generate');
     const btnUndo = panel.querySelector('#p5-vibe-btn-undo');
@@ -1030,7 +1026,6 @@ REGELN:
     }
 
     btnMinimize.addEventListener('click', minimizePanel);
-    btnClose.addEventListener('click', minimizePanel);
     pill.addEventListener('click', expandPanel);
 
     // Chat indicator UI
