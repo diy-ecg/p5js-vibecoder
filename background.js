@@ -53,9 +53,13 @@ function cleanGeneratedCode(rawText) {
     const afterFirst = text.slice(firstFence);
     const lineEnd = afterFirst.indexOf('\n');
     if (lineEnd !== -1) {
-      const closingFence = afterFirst.indexOf('```', lineEnd);
+      const codePart = afterFirst.slice(lineEnd + 1);
+      const closingFence = codePart.lastIndexOf('```');
       if (closingFence !== -1) {
-        return afterFirst.slice(lineEnd + 1, closingFence).trim();
+        return codePart.slice(0, closingFence).trim();
+      } else {
+        // Output was cut off before closing fence was written
+        return codePart.trim();
       }
     }
   }
@@ -122,7 +126,8 @@ RULES:
 3. Code MUST include standard p5.js functions like setup() and draw() (if animated/interactive).
 4. Ensure smooth 60 FPS performance and proper canvas initialization (e.g. createCanvas(400, 400) or windowWidth/windowHeight as appropriate).
 5. Use beautiful colors, clever math (sin, cos, noise, lerp) or interactive elements (mouseX, mouseY, keys) when appropriate for the prompt.
-6. Consider previous conversation messages and seamlessly build upon them.`
+6. Consider previous conversation messages and seamlessly build upon them.
+7. For large sketches, write clean and token-efficient code without redundant verbose comments to stay safely within output token limits.`
       : `Du bist ein brillanter Creative Coder und p5.js Spezialist in einem interaktiven Chat.
 Deine Aufgabe ist es, hochwertigen, ästhetischen und fehlerfreien p5.js Code (JavaScript) für den p5.js Web-Editor zu generieren.
 
@@ -132,7 +137,8 @@ REGELN:
 3. Der Code MUSS standardmäßige p5.js Methoden enthalten wie setup() und draw() (sofern animiert/interaktiv).
 4. Sorge für flüssige 60 FPS Performance und saubere Canvas-Initialisierung (z.B. createCanvas(400, 400) oder windowWidth/windowHeight falls passend).
 5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.
-6. Berücksichtige vorherige Nachrichten und baue nahtlos darauf auf.`;
+6. Berücksichtige vorherige Nachrichten und baue nahtlos darauf auf.
+7. Schreibe bei umfangreichen Sketchen sauberen und token-effizienten Code ohne überflüssige redundante Kommentare, um das Token-Limit nicht zu überschreiten.`;
 
     const requestBody = {
       contents: contents,
@@ -179,11 +185,16 @@ REGELN:
 
       const rawCode = candidate.content.parts[0].text;
       const finalCode = cleanGeneratedCode(rawCode);
+      const isTruncated = candidate.finishReason === 'MAX_TOKENS';
+      if (isTruncated) {
+        console.warn('[p5-vibe] Gemini response hit maxOutputTokens (8192) in background script!');
+      }
 
       return {
         success: true,
         code: finalCode,
-        modelUsed: currentModel
+        modelUsed: currentModel,
+        isTruncated
       };
     } catch (networkError) {
       lastError = networkError.message;

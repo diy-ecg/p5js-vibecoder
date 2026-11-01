@@ -79,7 +79,8 @@
       modelInfoActive: (n) => `✓ ${n} Modelle für deinen Key aktiv`,
       modelInfoError: 'Konnte keine Modelle abrufen (Key prüfen).',
       invalidKeyError: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key in den Einstellungen.',
-      noResponseError: 'Keine Antwort von Gemini erhalten.'
+      noResponseError: 'Keine Antwort von Gemini erhalten.',
+      statusTruncatedWarning: '⚠️ Warnung: Das Skript hat das Token-Ausgabelimit von Gemini (8.192 Tokens) erreicht und wurde abgeschnitten! Nutze ↩ Undo.'
     },
     en: {
       panelTitle: 'p5.js Vibe Coder',
@@ -134,7 +135,8 @@
       modelInfoActive: (n) => `✓ ${n} models active for your key`,
       modelInfoError: 'Could not fetch models (check key).',
       invalidKeyError: 'Invalid Gemini API key. Please check your key in settings.',
-      noResponseError: 'No response received from Gemini.'
+      noResponseError: 'No response received from Gemini.',
+      statusTruncatedWarning: '⚠️ Warning: The script reached Gemini\'s output token limit (8,192 tokens) and was truncated! Use ↩ Undo.'
     }
   };
 
@@ -208,9 +210,13 @@
       const afterFirst = text.slice(firstFence);
       const lineEnd = afterFirst.indexOf('\n');
       if (lineEnd !== -1) {
-        const closingFence = afterFirst.slice(lineEnd + 1).indexOf('```');
+        const codePart = afterFirst.slice(lineEnd + 1);
+        const closingFence = codePart.lastIndexOf('```');
         if (closingFence !== -1) {
-          return afterFirst.slice(lineEnd + 1, lineEnd + 1 + closingFence).trim();
+          return codePart.slice(0, closingFence).trim();
+        } else {
+          // Output was cut off before closing fence was written
+          return codePart.trim();
         }
       }
     }
@@ -294,7 +300,8 @@ RULES:
 3. Code MUST include standard p5.js functions like setup() and draw() (if animated/interactive).
 4. Ensure smooth 60 FPS performance and proper canvas initialization (e.g. createCanvas(400, 400) or windowWidth/windowHeight as appropriate).
 5. Use beautiful colors, clever math (sin, cos, noise, lerp) or interactive elements (mouseX, mouseY, keys) when appropriate for the prompt.
-6. Consider previous conversation messages and seamlessly build upon them.`
+6. Consider previous conversation messages and seamlessly build upon them.
+7. For large sketches, write clean and token-efficient code without redundant verbose comments to stay safely within output token limits.`
       : `Du bist ein brillanter Creative Coder und p5.js Spezialist in einem interaktiven Chat.
 Deine Aufgabe ist es, hochwertigen, ästhetischen und fehlerfreien p5.js Code (JavaScript) für den p5.js Web-Editor zu generieren.
 
@@ -304,7 +311,8 @@ REGELN:
 3. Der Code MUSS standardmäßige p5.js Methoden enthalten wie setup() und draw() (sofern animiert/interaktiv).
 4. Sorge für flüssige 60 FPS Performance und saubere Canvas-Initialisierung (z.B. createCanvas(400, 400) oder windowWidth/windowHeight falls passend).
 5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.
-6. Berücksichtige die bisherige Unterhaltung und baue nahtlos auf vorherigen Anweisungen auf.`;
+6. Berücksichtige die bisherige Unterhaltung und baue nahtlos auf vorherigen Anweisungen auf.
+7. Schreibe bei umfangreichen Sketchen sauberen und token-effizienten Code ohne überflüssige redundante Kommentare, um das Token-Limit nicht zu überschreiten.`;
 
     const requestBody = {
       contents: contents,
@@ -340,10 +348,18 @@ REGELN:
       return { success: false, error: t('noResponseError') };
     }
 
+    const rawCode = candidate.content.parts[0].text;
+    const finalCode = cleanGeneratedCode(rawCode);
+    const isTruncated = candidate.finishReason === 'MAX_TOKENS';
+    if (isTruncated) {
+      console.warn('[p5-vibe] Gemini response hit maxOutputTokens (8192) and was truncated by the API!');
+    }
+
     return {
       success: true,
-      code: cleanGeneratedCode(candidate.content.parts[0].text),
-      userInstruction: userInstruction
+      code: finalCode,
+      userInstruction: userInstruction,
+      isTruncated
     };
   }
 
@@ -396,7 +412,8 @@ REGELN:
               success: true,
               code: res.code,
               modelUsed: currentModel,
-              userInstruction: res.userInstruction
+              userInstruction: res.userInstruction,
+              isTruncated: res.isTruncated
             };
           }
 
@@ -1533,7 +1550,9 @@ REGELN:
             draftPrompt = '';
             historyNavIndex = -1;
 
-            if (config.autoRun) {
+            if (response.isTruncated) {
+              setStatus(t('statusTruncatedWarning'), 'error');
+            } else if (config.autoRun) {
               setTimeout(() => {
                 triggerPlaySketch();
               }, 100);
