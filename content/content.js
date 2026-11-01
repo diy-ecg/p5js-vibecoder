@@ -15,6 +15,7 @@
     availableModels: []
   };
   let codeHistory = [];
+  let promptHistory = [];
   let isGenerating = false;
   let activeMode = 'edit'; // 'edit' or 'create'
   let pendingRequests = new Map();
@@ -546,6 +547,23 @@ REGELN:
           <button class="p5-vibe-chip" data-prompt="Ein leuchtendes Partikelsystem, das einen Schweif hinter dem Mauszeiger herzieht">✨ Maus-Partikel</button>
         </div>
 
+        <!-- Prompt Header with History Button -->
+        <div class="p5-vibe-prompt-header">
+          <label for="p5-vibe-prompt-text" class="p5-vibe-prompt-label">Dein Prompt</label>
+          <button type="button" class="p5-vibe-btn-history" id="p5-vibe-btn-history" title="Verlauf bisheriger Prompts einsehen">
+            🕒 Verlauf (<span id="p5-vibe-history-count">0</span>)
+          </button>
+        </div>
+
+        <!-- History Popover / Drawer -->
+        <div class="p5-vibe-history-drawer" id="p5-vibe-history-drawer">
+          <div class="p5-vibe-history-header">
+            <span>Bisherige Prompts</span>
+            <button type="button" class="p5-vibe-btn-clear-history" id="p5-vibe-btn-clear-history">Leeren</button>
+          </div>
+          <div class="p5-vibe-history-list" id="p5-vibe-history-list"></div>
+        </div>
+
         <!-- Prompt Input -->
         <div class="p5-vibe-prompt-area">
           <textarea 
@@ -790,11 +808,96 @@ REGELN:
       });
     });
 
-    // Keyboard shortcut in textarea: Ctrl+Enter or Cmd+Enter to generate
+    // Prompt History UI & Navigation
+    const btnHistory = panel.querySelector('#p5-vibe-btn-history');
+    const historyDrawer = panel.querySelector('#p5-vibe-history-drawer');
+    const historyList = panel.querySelector('#p5-vibe-history-list');
+    const historyCount = panel.querySelector('#p5-vibe-history-count');
+    const btnClearHistory = panel.querySelector('#p5-vibe-btn-clear-history');
+
+    let historyNavIndex = -1;
+    let draftPrompt = '';
+
+    function renderHistoryList() {
+      if (historyCount) historyCount.textContent = promptHistory.length;
+      if (!historyList) return;
+      historyList.innerHTML = '';
+      if (promptHistory.length === 0) {
+        historyList.innerHTML = '<div class="p5-vibe-history-empty">Noch keine Prompts gespeichert</div>';
+        return;
+      }
+      promptHistory.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'p5-vibe-history-item';
+        div.textContent = item;
+        div.title = `Klicken zum Übernehmen:\n"${item}"`;
+        div.addEventListener('click', () => {
+          promptText.value = item;
+          promptText.focus();
+          historyDrawer.classList.remove('open');
+          btnHistory.classList.remove('active');
+          historyNavIndex = idx;
+        });
+        historyList.appendChild(div);
+      });
+    }
+
+    btnHistory.addEventListener('click', () => {
+      const isOpen = historyDrawer.classList.toggle('open');
+      btnHistory.classList.toggle('active', isOpen);
+      if (isOpen) {
+        renderHistoryList();
+      }
+    });
+
+    btnClearHistory.addEventListener('click', () => {
+      promptHistory = [];
+      browser.storage.local.set({ p5VibePromptHistory: [] });
+      renderHistoryList();
+    });
+
+    function savePromptToHistory(prompt) {
+      if (!prompt || !prompt.trim()) return;
+      const clean = prompt.trim();
+      promptHistory = promptHistory.filter(p => p !== clean);
+      promptHistory.unshift(clean);
+      if (promptHistory.length > 50) promptHistory.pop();
+      browser.storage.local.set({ p5VibePromptHistory: promptHistory });
+      renderHistoryList();
+      historyNavIndex = -1;
+      draftPrompt = '';
+    }
+
+    // Keyboard shortcut in textarea: Ctrl+Enter / Cmd+Enter to generate, ArrowUp/ArrowDown for history
     promptText.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         triggerGenerate();
+        return;
+      }
+
+      // Terminal-style history browsing
+      if (e.key === 'ArrowUp' && (promptText.selectionStart === 0 || promptText.value === '')) {
+        if (promptHistory.length > 0) {
+          if (historyNavIndex === -1) {
+            draftPrompt = promptText.value;
+          }
+          if (historyNavIndex + 1 < promptHistory.length) {
+            historyNavIndex++;
+            promptText.value = promptHistory[historyNavIndex];
+            e.preventDefault();
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (historyNavIndex > 0) {
+          historyNavIndex--;
+          promptText.value = promptHistory[historyNavIndex];
+          e.preventDefault();
+        } else if (historyNavIndex === 0) {
+          historyNavIndex = -1;
+          promptText.value = draftPrompt;
+          e.preventDefault();
+        }
       }
     });
 
@@ -862,6 +965,8 @@ REGELN:
         setStatus('Bitte trage zuerst deinen Gemini API-Key ein.', 'error');
         return;
       }
+
+      savePromptToHistory(prompt);
 
       isGenerating = true;
       btnGenerate.disabled = true;
@@ -947,13 +1052,20 @@ REGELN:
       'geminiApiKey',
       'geminiModel',
       'p5VibePosition',
-      'p5VibeMinimized'
+      'p5VibeMinimized',
+      'p5VibePromptHistory'
     ]).then((data) => {
       const panel = document.getElementById('p5-vibe-panel');
       const pill = document.getElementById('p5-vibe-pill');
       const keyInput = document.getElementById('p5-vibe-key-input');
       const modelSelect = document.getElementById('p5-vibe-model-select');
       const modelLabel = document.getElementById('p5-vibe-model-label');
+      const historyCount = document.getElementById('p5-vibe-history-count');
+
+      if (Array.isArray(data.p5VibePromptHistory)) {
+        promptHistory = data.p5VibePromptHistory;
+        if (historyCount) historyCount.textContent = promptHistory.length;
+      }
 
       if (data.geminiApiKey) {
         config.apiKey = data.geminiApiKey;

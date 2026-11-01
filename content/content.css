@@ -288,6 +288,120 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+/* Prompt Header & History Drawer */
+.p5-vibe-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.p5-vibe-prompt-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--p5-vibe-text-muted);
+}
+
+.p5-vibe-btn-history {
+  background: transparent;
+  border: none;
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.p5-vibe-btn-history:hover {
+  background: rgba(96, 165, 250, 0.15);
+  color: #93c5fd;
+}
+
+.p5-vibe-btn-history.active {
+  background: rgba(96, 165, 250, 0.25);
+  color: #fff;
+}
+
+.p5-vibe-history-drawer {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--p5-vibe-surface);
+  border: 1px solid var(--p5-vibe-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  max-height: 160px;
+  overflow-y: auto;
+  animation: p5-vibe-slide-down 0.2s ease;
+}
+
+.p5-vibe-history-drawer.open {
+  display: flex;
+}
+
+.p5-vibe-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--p5-vibe-text-subtle);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 4px;
+}
+
+.p5-vibe-btn-clear-history {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.p5-vibe-btn-clear-history:hover {
+  text-decoration: underline;
+}
+
+.p5-vibe-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.p5-vibe-history-empty {
+  font-size: 11px;
+  color: var(--p5-vibe-text-subtle);
+  padding: 6px 0;
+  text-align: center;
+}
+
+.p5-vibe-history-item {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #14151a;
+  border: 1px solid transparent;
+  color: var(--p5-vibe-text);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p5-vibe-history-item:hover {
+  background: #282a35;
+  border-color: rgba(237, 34, 93, 0.4);
+  color: #fff;
+  transform: translateX(2px);
+}
+
 /* Prompt Textarea */
 .p5-vibe-prompt-area {
   display: flex;
