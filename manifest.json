@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "p5.js Vibe Coder (Gemini AI)",
   "version": "1.0.0",
-  "description": "Vibe coding im p5.js Webeditor mit Google Gemini. Prompte deine Ideen und generiere direkt p5.js Code.",
+  "description": "Vibe coding in the p5.js Web Editor with Google Gemini. Prompt your creative ideas and generate p5.js code directly.",
   "browser_specific_settings": {
     "gecko": {
       "id": "p5-vibecoder@local"

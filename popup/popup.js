@@ -64,10 +64,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statusIndicator = document.getElementById('status-indicator');
   const statusText = document.getElementById('status-text');
 
-  let currentLang = 'de';
+  let currentLang = 'en';
 
   function applyPopupLanguage(lang) {
-    currentLang = lang === 'en' ? 'en' : 'de';
+    currentLang = lang === 'de' ? 'de' : 'en';
     const t = POPUP_I18N[currentLang];
 
     if (langSelect && langSelect.value !== currentLang) {
@@ -136,6 +136,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (data.p5VibeLang === 'en' || data.p5VibeLang === 'de') {
       currentLang = data.p5VibeLang;
+    } else {
+      currentLang = 'en';
     }
 
     if (data.geminiApiKey) {

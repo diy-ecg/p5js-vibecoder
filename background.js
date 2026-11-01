@@ -16,7 +16,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
       .then(res => ({
         apiKey: res.geminiApiKey || '',
         model: res.geminiModel || DEFAULT_MODEL,
-        lang: res.p5VibeLang || 'de'
+        lang: res.p5VibeLang || 'en'
       }))
       .catch(err => ({ error: err.message }));
   }
@@ -70,7 +70,7 @@ function cleanGeneratedCode(rawText) {
 /**
  * Call the Google Gemini API to generate or modify p5.js code
  */
-async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model, chatSession, lang = 'de' }) {
+async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model, chatSession, lang = 'en' }) {
   const isEn = (lang === 'en');
   if (!apiKey || !apiKey.trim()) {
     return {

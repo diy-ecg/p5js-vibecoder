@@ -3,140 +3,145 @@
 [![GitHub](https://img.shields.io/badge/GitHub-diy--ecg%2Fp5js--vibecoder-181717?logo=github)](https://github.com/diy-ecg/p5js-vibecoder)
 [![Firefox Add-on](https://img.shields.io/badge/Platform-Firefox%20WebExtension%20(MV3)-FF7139?logo=firefox-browser)](https://editor.p5js.org/)
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-4285F4?logo=google)](https://aistudio.google.com/)
-[![Language](https://img.shields.io/badge/Language-Deutsch%20%7C%20English-blue)](#-zweisprachig--bilingual-de--en)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Bilingual](https://img.shields.io/badge/Language-English%20%7C%20Deutsch-blue)](#-bilingual-support-en--de)
 
-Ein leistungsstarkes Browser-Plug-In für **Vibe-Coding** direkt im offiziellen [p5.js Webeditor](https://editor.p5js.org/).
+A high-performance browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/).
 
-Tippe einfach auf Deutsch oder Englisch ein, was du visualisieren oder ändern möchtest. Google Gemini generiert in Sekundenschnelle den p5.js-Code und überträgt ihn direkt in deinen CodeMirror-Editor – inklusive automatischem Start des Sketches!
-
----
-
-## 🚀 Features & Highlights
-
-### 💬 Multi-Turn Chat & Intelligenter Kontext
-- **Kein manuelles Umschalten nötig**: Erkennt automatisch, ob du an einem bestehenden Sketch weiterbaust oder bei leerem Editor von Grund auf neu beginnst.
-- **Konversations-Gedächtnis**: Gemini behält die letzten Dialog-Runden im Gedächtnis (*„Mache es grün“*, *„Lass die Partikel langsamer fallen“*).
-- **Neuer Chat (`×`)**: Setzt das Chat-Gedächtnis mit einem Klick zurück, um ein frisches Projekt ohne Altlasten zu starten.
-- **Sauberes Eingabefeld**: Das Prompt-Feld leert sich nach dem Absenden automatisch, damit du direkt deine nächste Idee eingeben kannst.
-
-### ▶️ Auto-Play mit React- & Fiber-Bridge
-- **Direktes Starten**: Der generierte Sketch wird sofort im Vorschaufenster gerendert – kein manueller Klick auf den Play-Button mehr nötig.
-- **Ein-/Ausschalter**: Direkt neben dem Verlauf kann der Auto-Play-Modus per Schiebeschalter (standardmäßig *ON*) jederzeit auf *OFF* gestellt werden.
-- **Robuste Ausführung**: Nutzt ein mehrstufiges Event-System (React 18 Fiber-Dispatch, PointerEvents und Tastatur-Shortcuts), um Firefox-Sandbox-Restriktionen nahtlos zu überwinden.
-
-### ↩ 1-Klick Undo
-- Setzt den Editor mit einem Klick auf die vorherige Code-Version zurück.
-- Spult gleichzeitig auch das Chat-Gedächtnis um eine Runde zurück, damit der Dialog konsistent bleibt.
-
-### 🕒 Lokaler Prompt-Verlauf (History)
-- Speichert deine letzten 50 Prompts dauerhaft im Browser (`browser.storage.local`).
-- Klickbarer **„🕒 Verlauf“**-Button mit Übersicht und Schnellübernahme.
-- **Terminal-Style**: Mit den Pfeiltasten <kbd>↑</kbd> und <kbd>↓</kbd> im leeren Eingabefeld kannst du direkt durch deine früheren Prompts blättern.
-
-### 🌍 Zweisprachig / Bilingual (DE / EN)
-- Umschaltbar zwischen **🇩🇪 Deutsch** und **🇬🇧 English** direkt in den Einstellungen.
-- Alle Buttons, Labels, Fehlermeldungen, Status-Texte und Gemini-Systemprompts passen sich in Echtzeit an.
-- Voll synchronisiert zwischen In-Page-Panel und Toolbar-Popup.
-
-### ⚡ Live-Modell-Erkennung & Fallback
-- Erkennt automatisch die für deinen API-Key freigeschalteten Gemini-Modelle (**Gemini 2.0 Flash**, **Gemini 3.8 Flash**, **Gemini 3.8 Pro**, etc.).
-- **Automatischer Cascade-Fallback**: Weicht bei vorübergehender Auslastung eines Modells automatisch auf alternative Modelle aus.
-- Dynamische Anzeige des aktuell aktiven Modells direkt im Header-Badge.
-
-### 🎨 Ergonomisches Dark UI
-- Frei verschiebbar über die gesamte Zeichenfläche (Drag & Drop am Header).
-- Mit einem Klick oder per Tastaturkürzel (<kbd>Alt</kbd> + <kbd>V</kbd>) zu einem dezenten Badge minimierbar.
-- Speichert Fensterposition und Minimierungsstatus automatisch.
+Simply type what you want to visualize, build, or modify in natural language. Powered by **Google Gemini**, the extension generates production-ready p5.js code in seconds, injects it straight into your CodeMirror editor, and automatically runs your sketch!
 
 ---
 
-## 🧠 Wichtige Erkenntnisse & Best Practices
+## 🚀 Highlights & Features
 
-### Das 8.192 Token-Ausgabelimit bei großen Sketchen
+### 💬 Multi-Turn Conversational Memory & Context
+- **Zero-Friction Context Switching**: Automatically detects whether you are starting fresh on a blank canvas or iterating on an existing sketch.
+- **True Multi-Turn Dialog**: Gemini remembers prior iteration turns (*"Make it neon green"*, *"Slow down the particle flow"*, *"Add a bounce effect when the user clicks"*).
+- **New Chat Reset (`×`)**: Clear conversational memory with a single click to start a new sketch with a clean context.
+- **Auto-Clearing Prompt Box**: The prompt field automatically clears after generation so you can immediately type your next instruction without having to delete old text.
 
-| Parameter | Gemini Limit | Bedeutung für p5.js |
+### ▶️ Instant Auto-Play with React & Fiber Bridge
+- **Immediate Visual Feedback**: The generated sketch automatically starts running in the preview window as soon as generation completes — no need to manually click the Play button.
+- **On/Off Toggle**: A dedicated switch in the HUD header lets you disable or enable Auto-Play at any time (defaults to **ON**).
+- **Bulletproof Execution**: Leverages a multi-stage execution bridge (React 18 Fiber dispatch, synthetic PointerEvents, and keyboard shortcuts) that reliably triggers execution across Firefox sandbox boundaries.
+
+### ↩ 1-Click Undo
+- Restore your previous code version with a single click on the `↩ Undo` button.
+- Simultaneously rolls back conversational history by one turn, ensuring your AI dialog stays synchronized with your editor state.
+
+### 🕒 Local Prompt History
+- Automatically records your last 50 prompts in local browser storage (`browser.storage.local`).
+- **History Modal**: Click the **"🕒 History"** button to review past prompts, copy them, or load them back into the editor with one click.
+- **Terminal-Style Navigation**: Press the <kbd>↑</kbd> and <kbd>↓</kbd> arrow keys inside an empty prompt input to quickly cycle through previous prompts.
+
+### 🌍 Bilingual Support (EN / DE)
+- **English by Default**: Pre-configured for English (`en`), with full support for German (`de`).
+- Switch languages on the fly via the settings menu in the floating HUD or the toolbar popup.
+- Every UI element, error message, toast alert, and underlying Gemini system prompt dynamically adapts to your selected language.
+
+### ⚡ Live Gemini Model Discovery & Auto-Fallback
+- Queries the Google Gemini API to detect all models available for your API key (**Gemini 2.0 Flash**, **Gemini 3.8 Flash**, **Gemini 3.8 Pro**, etc.).
+- **Cascade Fallback**: Automatically falls back to stable secondary models if your chosen model experiences temporary rate limits or server load.
+- Dynamic status badge in the HUD header showing the active model in real time.
+
+### 🎨 Ergonomic Floating Dark HUD
+- Fully draggable floating panel across your browser window.
+- Collapsible into an unobtrusive floating pill badge via the header button or keyboard shortcut (<kbd>Alt</kbd> + <kbd>V</kbd>).
+- Automatically remembers its screen position and minimize state across browser reloads.
+
+---
+
+## 🧠 Technical Deep-Dive: Token Limits & Large Sketches
+
+### Understanding the 8,192 Output Token Ceiling
+
+| Parameter | Google Gemini Limit | Impact on p5.js Sketches |
 | :--- | :--- | :--- |
-| **Input Context** | Bis zu 1.000.000 Tokens | Riesig – Gemini kann auch 10.000 Zeilen bestehenden Code problemlos lesen. |
-| **Output Limit** | **8.192 Tokens** (ca. 500–600 Zeilen) | Die maximale Ausgabelänge pro Antwort ist durch die Google API strikt gedeckelt. |
+| **Input Context** | Up to 1,000,000 tokens | Massive: Gemini can easily read existing sketches containing thousands of lines of code. |
+| **Output Token Limit** | **8,192 tokens** (~500–600 lines) | The maximum response size is strictly capped per API generation call. |
 
-#### Warum brechen Skripte ab ~600 Zeilen ab?
-Da der Vibe-Coder Gemini anweist, den *vollständigen, sofort lauffähigen Code* zurückzugeben, muss die KI bei jeder Änderung den gesamten Sketch neu formulieren. Bei etwa 500 bis 600 Zeilen (inkl. Einrückungen, mathematischen Formeln und Kommentaren) erreicht die Antwort exakt **8.192 Tokens** und Google schneidet die Übertragung abrupt ab (`finishReason: "MAX_TOKENS"`).
+#### Why can sketches truncate around 600 lines?
+To guarantee complete code integrity, p5.js Vibe Coder instructs Gemini to always output the **entire, self-contained, immediately runnable sketch**. As a sketch grows beyond 500 to 600 lines (including complex math, comments, and nested brackets), the generated output can hit the strict **8,192 token limit**, causing the Google API to terminate generation mid-stream (`finishReason: "MAX_TOKENS"`).
 
-#### Integrierter Schutz im Plugin:
-1. **Truncation-Erkennung**: Das Plug-In erkennt das `MAX_TOKENS`-Signal sofort.
-2. **Auto-Play-Schutz**: Unvollständiger Code wird **nicht** gestartet, um Abstürze im p5-Viewer zu verhindern.
-3. **Markdown-Säuberung**: Verhindert, dass abgebrochene Code-Fences (````) als Syntaxfehler im Editor landen.
-4. **Warnung & Undo**: Zeigt eine deutliche Warnmeldung an – mit `↩ Undo` stellst du deinen funktionierenden Code sofort wieder her.
-5. **Token-Effizienz**: Der System-Prompt weist Gemini an, bei umfangreichen Sketchen auf überflüssige Kommentare zu verzichten und kompakten, token-sparenden Code zu schreiben.
+#### Built-in Truncation Safeguards:
+1. **Truncation Detection**: The extension monitors the Gemini response payload for `finishReason === 'MAX_TOKENS'`.
+2. **Auto-Play Protection**: Incomplete code is prevented from running automatically to keep the p5 canvas from crashing.
+3. **Fence Sanitization**: Cleans up unclosed markdown code fences (````) so broken markup does not corrupt the CodeMirror editor.
+4. **Instant Rollback**: Displays a prominent warning toast prompting you to use `↩ Undo` to restore your last working code version.
+5. **Token Efficiency Instructions**: System prompts explicitly instruct the AI to write clean, concise, token-efficient code without redundant comments when dealing with large sketches.
 
-#### 💡 Tipps für große Projekte (> 500 Zeilen):
-- **Refactoring-Prompt**: Bitte Gemini vorab: *„Fasse wiederkehrende Logik in kompakte Hilfsfunktionen zusammen und halte den Code prägnant.“*
-- **Dateien aufteilen (Sketch Files)**: Im p5.js Editor links auf den Pfeil neben *Sketch Files* klicken und Klassen (z. B. `Particle.js`, `Physics.js`) in eigene Dateien auslagern. So bleibt die Hauptdatei `sketch.js` immer schlank und weit unter dem Token-Limit.
+#### 💡 Best Practices for Large Projects (>500 lines):
+- **Refactoring Prompts**: Ask Gemini: *"Refactor redundant logic into compact helper functions and keep code concise."*
+- **Modular Sketch Files**: In the p5.js Web Editor, click the arrow next to **Sketch Files** in the left sidebar to add separate JavaScript files (e.g., `Particle.js`, `Physics.js`, `Constants.js`). This keeps `sketch.js` slim and well below the 8,192 token ceiling.
 
 ---
 
-## ⌨️ Tastatur-Kürzel
+## ⌨️ Keyboard Shortcuts
 
-| Tastenkürzel | Funktion |
+| Shortcut | Action |
 | :--- | :--- |
-| <kbd>Strg</kbd> + <kbd>Enter</kbd> / <kbd>Cmd</kbd> + <kbd>Enter</kbd> | Prompt abschicken & Code generieren |
-| <kbd>↑</kbd> / <kbd>↓</kbd> (im leeren Promptfeld) | Durch bisherige Prompts aus dem Verlauf blättern |
-| <kbd>Alt</kbd> + <kbd>V</kbd> | Panel ein- oder ausblenden / minimieren |
+| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> / <kbd>Cmd</kbd> + <kbd>Enter</kbd> | Submit prompt & generate p5.js code |
+| <kbd>↑</kbd> / <kbd>↓</kbd> (in empty prompt box) | Navigate previous prompt history |
+| <kbd>Alt</kbd> + <kbd>V</kbd> | Toggle / minimize floating HUD panel |
 
 ---
 
-## 🛠️ Installation in Mozilla Firefox
+## 🛠️ Installation Guide
 
-Da die Erweiterung quelloffen als lokale WebExtension (Manifest V3) vorliegt, kannst du sie in Firefox innerhalb von 30 Sekunden installieren:
+The extension is open-source and built on Manifest V3 (WebExtensions). You can install it in Firefox in under a minute:
 
-1. Klone das Repository oder lade es als ZIP herunter:
+### Mozilla Firefox
+1. Clone the repository or download it as a ZIP:
    ```bash
    git clone https://github.com/diy-ecg/p5js-vibecoder.git
    ```
-2. Öffne Firefox und navigiere zu:
+2. Open Firefox and navigate to:
    ```text
    about:debugging#/runtime/this-firefox
    ```
-3. Klicke auf die Schaltfläche **„Temporäres Add-on laden...“** (Load Temporary Add-on).
-4. Wähle die Datei **`manifest.json`** im geklonten Projektordner aus.
-5. Das Plug-In ist sofort aktiv! 🎉
+3. Click on the button **"Load Temporary Add-on..."**.
+4. In the file picker, select **`manifest.json`** inside the cloned project directory.
+5. The extension is now active and ready to use! 🎉
+
+*(Tip: In Chromium-based browsers such as Google Chrome or Brave, navigate to `chrome://extensions`, enable **Developer mode**, and click **"Load unpacked"**).*
 
 ---
 
-## 🔑 Gemini API-Key einrichten
+## 🔑 Setting Up Your Gemini API Key
 
-1. Erstelle dir kostenlos einen API-Key bei [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Öffne den p5.js Webeditor: [editor.p5js.org](https://editor.p5js.org/).
-3. Klicke im p5.js Vibe Coder Panel oben rechts auf das **Zahnrad-Symbol (⚙)**.
-4. Trage deinen API-Key ein. Er wird ausschließlich lokal im sicheren Speicher deines Firefox-Profils abgelegt.
-5. Klicke auf **„🔄 Modelle prüfen“**, um die für deinen Key freigeschalteten Modelle zu laden.
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. Open the p5.js Web Editor: [editor.p5js.org](https://editor.p5js.org/).
+3. In the p5.js Vibe Coder HUD, click the **Gear icon (⚙)** in the top right.
+4. Paste your API key. The key is stored locally in your browser's private extension storage and is never sent to third-party servers.
+5. Click **"🔄 Refresh Models"** to verify your key and populate the available Gemini models.
 
 ---
 
-## 📁 Projektstruktur
+## 📁 Repository Structure
 
 ```text
 p5js-vibecoder/
-├── manifest.json         # Firefox WebExtension Konfiguration (Manifest V3)
-├── background.js         # Service Worker & Fallback-API-Kommunikation mit Gemini
+├── manifest.json         # WebExtension configuration (Manifest V3)
+├── background.js         # Service worker & Gemini API communication bridge
 ├── content/
-│   ├── content.js        # Floating UI Panel Logik, i18n, Event-Handling & API-Client
-│   ├── content.css       # Stylesheets, Dark-Theme, Animationen & Layout
-│   └── page-bridge.js    # Unsanboxed Page-Script zur Interaktion mit CodeMirror & React
+│   ├── content.js        # Floating HUD logic, i18n, event handlers & API client
+│   ├── content.css       # Ergonomic dark theme, animations & responsive styling
+│   └── page-bridge.js    # Unsandboxed page bridge for CodeMirror & React 18
 ├── popup/
-│   ├── popup.html        # Toolbar-Popup für Einstellungen & Sprache
-│   ├── popup.css         # Styling des Popups
-│   └── popup.js          # Synchronisierte Einstellungslogik
+│   ├── popup.html        # Toolbar popup for settings, key management & language
+│   ├── popup.css         # Styling for the toolbar popup
+│   └── popup.js          # Synchronized configuration controller
 ├── icons/
 │   ├── icon-16.png
 │   ├── icon-48.png
 │   └── icon-128.png
-└── README.md
+├── LICENSE               # MIT License
+└── README.md             # Project documentation
 ```
 
 ---
 
-## 📄 Lizenz
+## 📄 License
 
-Open Source – lizenziert unter der [MIT License](LICENSE).
-Beiträge, Feedback und Issue-Reports sind herzlich willkommen!
+This project is licensed under the [MIT License](LICENSE).  
+Contributions, ideas, bug reports, and pull requests are warmly welcomed!

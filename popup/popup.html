@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,56 +20,56 @@
       <!-- Status Box -->
       <div class="status-card" id="status-card">
         <span class="status-indicator" id="status-indicator"></span>
-        <span id="status-text">Wird geladen...</span>
+        <span id="status-text">Loading...</span>
       </div>
 
       <!-- Settings Section -->
       <section class="form-group">
-        <label for="gemini-key" id="popup-label-key">Gemini API-Key</label>
+        <label for="gemini-key" id="popup-label-key">Gemini API Key</label>
         <div class="input-password-row">
           <input type="password" id="gemini-key" placeholder="AIzaSy..." spellcheck="false" autocomplete="off" />
-          <button type="button" id="btn-toggle-key" class="btn-eye" title="Key anzeigen/verbergen">👁</button>
+          <button type="button" id="btn-toggle-key" class="btn-eye" title="Show/hide key">👁</button>
         </div>
         <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="link-external" id="popup-link-key">
-          Kostenlosen Key bei Google AI Studio holen ↗
+          Get a free API key at Google AI Studio ↗
         </a>
       </section>
 
       <section class="form-group">
-        <label for="gemini-model" id="popup-label-model">Gemini Modell</label>
+        <label for="gemini-model" id="popup-label-model">Gemini Model</label>
         <select id="gemini-model">
-          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Sehr stabil & schnell – Empfohlen)</option>
-          <option value="gemini-3.8-flash">Gemini 3.8 Flash (Neueste Generation)</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Klassisch)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast & reliable – Recommended)</option>
+          <option value="gemini-3.8-flash">Gemini 3.8 Flash (Latest generation)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy)</option>
           <option value="gemini-3.8-pro">Gemini 3.8 Pro</option>
         </select>
       </section>
 
       <section class="form-group">
-        <label for="app-lang" id="popup-label-lang">Sprache / Language</label>
+        <label for="app-lang" id="popup-label-lang">Language / Sprache</label>
         <select id="app-lang">
-          <option value="de">🇩🇪 Deutsch</option>
           <option value="en">🇬🇧 English</option>
+          <option value="de">🇩🇪 Deutsch</option>
         </select>
       </section>
 
-      <button id="btn-save" class="btn-primary">Einstellungen speichern</button>
+      <button id="btn-save" class="btn-primary">Save Settings</button>
 
       <div id="save-msg" class="save-feedback"></div>
 
       <!-- Shortcuts / Tips -->
       <section class="shortcuts-card">
-        <h4 id="popup-shortcuts-title">Tastatur-Shortcuts</h4>
+        <h4 id="popup-shortcuts-title">Keyboard Shortcuts</h4>
         <ul>
-          <li><kbd>Strg</kbd>+<kbd>Enter</kbd> : <span id="shortcut-desc-generate">Code generieren</span></li>
-          <li><kbd>Alt</kbd>+<kbd>V</kbd> : <span id="shortcut-desc-toggle">Panel anzeigen / minimieren</span></li>
+          <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> : <span id="shortcut-desc-generate">Generate code</span></li>
+          <li><kbd>Alt</kbd>+<kbd>V</kbd> : <span id="shortcut-desc-toggle">Show / minimize panel</span></li>
         </ul>
       </section>
     </main>
 
     <footer class="popup-footer">
       <a href="https://editor.p5js.org/" target="_blank" class="btn-open-editor" id="popup-link-editor">
-        p5.js Webeditor öffnen ↗
+        Open p5.js Web Editor ↗
       </a>
     </footer>
   </div>

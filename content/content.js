@@ -14,7 +14,7 @@
     autoRun: true,
     isMinimized: false,
     availableModels: [],
-    lang: 'de'
+    lang: 'en'
   };
   let codeHistory = [];
   let promptHistory = [];
@@ -141,9 +141,9 @@
   };
 
   function t(key, ...args) {
-    const lang = config.lang || 'de';
-    const dict = I18N[lang] || I18N.de;
-    const val = dict[key] !== undefined ? dict[key] : (I18N.de[key] !== undefined ? I18N.de[key] : '');
+    const lang = config.lang || 'en';
+    const dict = I18N[lang] || I18N.en;
+    const val = dict[key] !== undefined ? dict[key] : (I18N.en[key] !== undefined ? I18N.en[key] : (I18N.de[key] !== undefined ? I18N.de[key] : ''));
     if (typeof val === 'function') {
       return val(...args);
     }
@@ -958,8 +958,8 @@ REGELN:
           <div class="p5-vibe-field">
             <label for="p5-vibe-lang-select" id="p5-vibe-label-lang">${t('languageLabel')}</label>
             <select id="p5-vibe-lang-select" class="p5-vibe-select">
-              <option value="de">🇩🇪 Deutsch</option>
               <option value="en">🇬🇧 English</option>
+              <option value="de">🇩🇪 Deutsch</option>
             </select>
           </div>
         </div>
@@ -1052,7 +1052,7 @@ REGELN:
 
     // Apply language across UI dynamically
     function applyLanguage(lang) {
-      config.lang = lang === 'en' ? 'en' : 'de';
+      config.lang = lang === 'de' ? 'de' : 'en';
 
       if (pill) pill.title = t('pillTitle');
       if (btnSettings) btnSettings.title = t('btnSettingsTitle');
@@ -1618,6 +1618,8 @@ REGELN:
 
       if (data.p5VibeLang === 'en' || data.p5VibeLang === 'de') {
         config.lang = data.p5VibeLang;
+      } else {
+        config.lang = 'en';
       }
       if (panel && typeof panel.__applyLanguage === 'function') {
         panel.__applyLanguage(config.lang);
