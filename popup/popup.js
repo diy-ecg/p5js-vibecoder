@@ -3,6 +3,9 @@
  * Fully bilingual (DE / EN) settings management
  */
 
+// Cross-browser compatibility polyfill (Firefox 'browser' vs Chromium 'chrome')
+const browser = globalThis.browser || globalThis.chrome;
+
 const POPUP_I18N = {
   de: {
     statusLoading: 'Wird geladen...',

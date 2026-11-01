@@ -7,6 +7,9 @@
   if (window.__p5VibeContentInjected) return;
   window.__p5VibeContentInjected = true;
 
+  // Cross-browser compatibility polyfill (Firefox 'browser' vs Chromium 'chrome')
+  const browser = globalThis.browser || globalThis.chrome;
+
   // State
   let config = {
     apiKey: '',

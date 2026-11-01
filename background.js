@@ -3,22 +3,29 @@
  * Handles Gemini API requests and storage management.
  */
 
+// Cross-browser compatibility polyfill (Firefox 'browser' vs Chromium 'chrome')
+const browser = globalThis.browser || globalThis.chrome;
+
 const DEFAULT_MODEL = 'gemini-2.0-flash';
 
-// Listen for messages from content script and popup (Promise-based for Firefox WebExtensions)
-browser.runtime.onMessage.addListener((message, sender) => {
+// Listen for messages from content script and popup (Universal Promise & sendResponse handler)
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'GENERATE_CODE') {
-    return handleGenerateCode(message);
+    handleGenerateCode(message)
+      .then(res => sendResponse(res))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true; // Keep channel open for async response in Chromium
   }
 
   if (message.action === 'GET_CONFIG') {
-    return browser.storage.local.get(['geminiApiKey', 'geminiModel', 'p5VibeLang'])
-      .then(res => ({
+    browser.storage.local.get(['geminiApiKey', 'geminiModel', 'p5VibeLang'])
+      .then(res => sendResponse({
         apiKey: res.geminiApiKey || '',
         model: res.geminiModel || DEFAULT_MODEL,
         lang: res.p5VibeLang || 'en'
       }))
-      .catch(err => ({ error: err.message }));
+      .catch(err => sendResponse({ error: err.message }));
+    return true;
   }
 
   if (message.action === 'SAVE_CONFIG') {
@@ -27,9 +34,10 @@ browser.runtime.onMessage.addListener((message, sender) => {
       geminiModel: message.model || DEFAULT_MODEL
     };
     if (message.lang) toSet.p5VibeLang = message.lang;
-    return browser.storage.local.set(toSet)
-      .then(() => ({ success: true }))
-      .catch(err => ({ success: false, error: err.message }));
+    browser.storage.local.set(toSet)
+      .then(() => sendResponse({ success: true }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
   }
 });
 

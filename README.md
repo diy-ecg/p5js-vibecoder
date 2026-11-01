@@ -1,12 +1,13 @@
-# ⚡ p5.js Vibe Coder (Firefox Extension)
+# ⚡ p5.js Vibe Coder (Browser Extension)
 
 [![GitHub](https://img.shields.io/badge/GitHub-diy--ecg%2Fp5js--vibecoder-181717?logo=github)](https://github.com/diy-ecg/p5js-vibecoder)
-[![Firefox Add-on](https://img.shields.io/badge/Platform-Firefox%20WebExtension%20(MV3)-FF7139?logo=firefox-browser)](https://editor.p5js.org/)
+[![Browsers](https://img.shields.io/badge/Browsers-Firefox%20%7C%20Chrome%20%7C%20Brave%20%7C%20Edge-success?logo=googlechrome)](https://editor.p5js.org/)
+[![Manifest V3](https://img.shields.io/badge/Platform-WebExtension%20(MV3)-blue)](#-installation-guide)
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-4285F4?logo=google)](https://aistudio.google.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Bilingual](https://img.shields.io/badge/Language-English%20%7C%20Deutsch-blue)](#-bilingual-support-en--de)
 
-A browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/).
+A cross-browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/). Works seamlessly in **Mozilla Firefox**, **Google Chrome**, **Brave**, **Microsoft Edge**, and other Chromium-based browsers.
 
 Simply type what you want to visualize, build, or modify in natural language. Powered by **Google Gemini**, the extension generates production-ready p5.js code in seconds, injects it straight into your CodeMirror editor, and automatically runs your sketch!
 
@@ -88,22 +89,33 @@ To guarantee complete code integrity, p5.js Vibe Coder instructs Gemini to alway
 
 ## 🛠️ Installation Guide
 
-The extension is open-source and built on Manifest V3 (WebExtensions). You can install it in Firefox in under a minute:
+The extension is open-source and built on Manifest V3. Thanks to its universal cross-browser architecture, it runs without modifications in **Firefox** and any **Chromium-based browser**:
 
-### Mozilla Firefox
+### 🦊 Mozilla Firefox
 1. Clone the repository or download it as a ZIP:
    ```bash
    git clone https://github.com/diy-ecg/p5js-vibecoder.git
    ```
-2. Open Firefox and navigate to:
+2. In Firefox, open a new tab and navigate to:
    ```text
    about:debugging#/runtime/this-firefox
    ```
-3. Click on the button **"Load Temporary Add-on..."**.
-4. In the file picker, select **`manifest.json`** inside the cloned project directory.
-5. The extension is now active and ready to use! 🎉
+3. Click **"Load Temporary Add-on..."**.
+4. In the file picker, select the **`manifest.json`** file inside the project directory.
 
-*(Tip: In Chromium-based browsers such as Google Chrome or Brave, navigate to `chrome://extensions`, enable **Developer mode**, and click **"Load unpacked"**).*
+---
+
+### 🌐 Google Chrome, Brave, Microsoft Edge & Opera
+1. Clone the repository or download it as a ZIP (if not already done).
+2. Open your browser's extension management page:
+   - **Chrome**: `chrome://extensions`
+   - **Brave**: `brave://extensions`
+   - **Edge**: `edge://extensions`
+   - **Opera**: `opera://extensions`
+3. Enable the **"Developer mode"** toggle (usually in the top right or sidebar).
+4. Click **"Load unpacked"** (or *Entpackte Erweiterung laden*).
+5. Select the cloned **`p5js-vibecoder`** root folder.
+6. The extension is immediately loaded and active! 🎉
 
 ---
 
