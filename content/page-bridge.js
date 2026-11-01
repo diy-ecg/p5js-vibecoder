@@ -8,10 +8,47 @@
   window.__p5VibeBridgeInjected = true;
 
   /**
-   * Locate the active editor instance (CodeMirror 5, CodeMirror 6 or fallback)
+   * Locate the active editor instance (CodeMirror 6, CodeMirror 5 or fallback)
    */
   function findEditor() {
-    // 1. CodeMirror 5 (used by current p5.js web editor via react-codemirror2)
+    // 1. CodeMirror 6 (used by modern p5.js web editor)
+    const cm6Targets = [
+      document.querySelector('.cm-content'),
+      document.querySelector('.cm-editor .cm-content'),
+      document.querySelector('.cm-editor'),
+      document.querySelector('.cm-scroller')
+    ].filter(Boolean);
+
+    for (const el of cm6Targets) {
+      const candidates = [
+        el.cmView?.view,
+        el.cmTile?.view,
+        el.editorView,
+        el.view
+      ];
+      for (const view of candidates) {
+        if (view && typeof view.dispatch === 'function' && view.state?.doc) {
+          return { type: 'cm6', instance: view, element: el };
+        }
+      }
+
+      // Check properties on element
+      try {
+        for (const key of Object.getOwnPropertyNames(el)) {
+          const val = el[key];
+          if (val && typeof val === 'object') {
+            if (typeof val.dispatch === 'function' && val.state?.doc) {
+              return { type: 'cm6', instance: val, element: el };
+            }
+            if (val.view && typeof val.view.dispatch === 'function' && val.view.state?.doc) {
+              return { type: 'cm6', instance: val.view, element: el };
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. CodeMirror 5
     const cmElements = document.querySelectorAll('.CodeMirror');
     for (const el of cmElements) {
       if (el.CodeMirror) {
@@ -19,18 +56,9 @@
       }
     }
 
-    // 2. CodeMirror 6 (newer version)
-    const cm6 = document.querySelector('.cm-editor');
-    if (cm6) {
-      const view = cm6.editorView || cm6.cmView?.view;
-      if (view) {
-        return { type: 'cm6', instance: view, element: cm6 };
-      }
-    }
-
-    // 3. Fallback: Standard textarea if CM hasn't rendered or is in basic mode
-    const textarea = document.querySelector('textarea.editor, .editor textarea');
-    if (textarea) {
+    // 3. Fallback: Standard textarea
+    const textarea = document.querySelector('textarea.editor, .editor textarea, textarea');
+    if (textarea && textarea.offsetParent !== null) {
       return { type: 'textarea', instance: textarea, element: textarea };
     }
 

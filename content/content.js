@@ -162,35 +162,185 @@ REGELN:
     });
   }
 
-  // Fallback for Firefox content script direct Xray access
-  function handleWrappedJSObjectFallback(action, newCode) {
-    try {
-      const cmEl = document.querySelector('.CodeMirror');
-      const cm = cmEl?.wrappedJSObject?.CodeMirror;
-      if (cm) {
-        if (action === 'GET_CODE') {
-          return { success: true, code: cm.getValue() };
-        }
-        if (action === 'SET_CODE') {
-          cm.setValue(newCode);
-          cm.focus();
-          return { success: true };
+  /**
+   * Helper: Locate CodeMirror 6 EditorView on DOM elements or wrappedJSObject (Firefox)
+   */
+  function findCM6View() {
+    const targets = [
+      document.querySelector('.cm-content'),
+      document.querySelector('.cm-editor .cm-content'),
+      document.querySelector('.cm-editor'),
+      document.querySelector('.cm-scroller')
+    ].filter(Boolean);
+
+    for (const el of targets) {
+      const candidates = [
+        el.cmView?.view,
+        el.cmTile?.view,
+        el.editorView,
+        el.view,
+        el.wrappedJSObject?.cmView?.view,
+        el.wrappedJSObject?.cmTile?.view,
+        el.wrappedJSObject?.editorView,
+        el.wrappedJSObject?.view
+      ];
+      for (const v of candidates) {
+        if (v && typeof v.dispatch === 'function' && v.state?.doc) {
+          return v;
         }
       }
-    } catch (err) {
-      console.warn('[p5-vibe] wrappedJSObject fallback failed:', err);
+
+      // Check all properties for dispatch
+      for (const target of [el, el.wrappedJSObject]) {
+        if (!target) continue;
+        try {
+          for (const key of Object.getOwnPropertyNames(target)) {
+            const val = target[key];
+            if (val && typeof val === 'object') {
+              if (typeof val.dispatch === 'function' && val.state?.doc) return val;
+              if (val.view && typeof val.view.dispatch === 'function' && val.view.state?.doc) return val.view;
+            }
+          }
+        } catch (e) {}
+      }
     }
-    return { success: false, code: null };
+    return null;
   }
 
+  /**
+   * Read the active code from the p5.js editor
+   */
   async function getEditorCode() {
-    const res = await sendBridgeAction('GET_CODE');
-    return res && res.success ? res.code : '';
+    // 1. Try CodeMirror 6 View
+    const view = findCM6View();
+    if (view && view.state?.doc) {
+      try {
+        return view.state.doc.toString();
+      } catch (e) {}
+    }
+
+    // 2. Try CodeMirror 6 Content DOM node text
+    const cmContent = document.querySelector('.cm-content') || document.querySelector('.cm-editor .cm-content');
+    if (cmContent && cmContent.innerText && cmContent.innerText.trim().length > 0) {
+      return cmContent.innerText;
+    }
+
+    // 3. Try CodeMirror 5
+    const cm5El = document.querySelector('.CodeMirror');
+    if (cm5El) {
+      const cm = cm5El.CodeMirror || cm5El.wrappedJSObject?.CodeMirror;
+      if (cm && typeof cm.getValue === 'function') {
+        try {
+          return cm.getValue();
+        } catch (e) {}
+      }
+    }
+
+    // 4. Try Textarea
+    const textarea = document.querySelector('textarea.editor, .editor textarea, textarea');
+    if (textarea && textarea.value) {
+      return textarea.value;
+    }
+
+    // 5. Try bridge message
+    try {
+      const res = await sendBridgeAction('GET_CODE');
+      if (res && res.success && res.code) return res.code;
+    } catch (e) {}
+
+    return '';
   }
 
-  async function setEditorCode(code) {
-    const res = await sendBridgeAction('SET_CODE', { code });
-    return res && res.success;
+  /**
+   * Set new code into the p5.js editor
+   */
+  async function setEditorCode(newCode) {
+    if (!newCode) return false;
+
+    // 1. Try CodeMirror 6 View Transaction (Official CM6 API)
+    const view = findCM6View();
+    if (view && typeof view.dispatch === 'function' && view.state?.doc) {
+      try {
+        const docLength = view.state.doc.length;
+        view.dispatch({
+          changes: { from: 0, to: docLength, insert: newCode }
+        });
+        if (typeof view.focus === 'function') view.focus();
+        return true;
+      } catch (err) {
+        console.warn('[p5-vibe] view.dispatch failed:', err);
+      }
+    }
+
+    // 2. Try CodeMirror 5 (.CodeMirror)
+    const cm5El = document.querySelector('.CodeMirror');
+    if (cm5El) {
+      const cm = cm5El.CodeMirror || cm5El.wrappedJSObject?.CodeMirror;
+      if (cm && typeof cm.setValue === 'function') {
+        try {
+          cm.setValue(newCode);
+          if (typeof cm.focus === 'function') cm.focus();
+          return true;
+        } catch (err) {
+          console.warn('[p5-vibe] cm.setValue failed:', err);
+        }
+      }
+    }
+
+    // 3. Try CodeMirror 6 contenteditable DOM injection via Selection + execCommand / Paste
+    const cmContent = document.querySelector('.cm-content') || document.querySelector('.cm-editor .cm-content');
+    if (cmContent) {
+      try {
+        cmContent.focus();
+
+        // Select all text
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(cmContent);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // Execute execCommand insertText
+        document.execCommand('selectAll', false, null);
+        const execSuccess = document.execCommand('insertText', false, newCode);
+
+        // Try Paste event as backup
+        if (!execSuccess || !cmContent.textContent.includes('function')) {
+          try {
+            const dt = new DataTransfer();
+            dt.setData('text/plain', newCode);
+            const pasteEvent = new ClipboardEvent('paste', {
+              bubbles: true,
+              cancelable: true,
+              clipboardData: dt
+            });
+            cmContent.dispatchEvent(pasteEvent);
+          } catch (e) {}
+        }
+
+        // Return true if injected
+        return true;
+      } catch (err) {
+        console.warn('[p5-vibe] contenteditable injection failed:', err);
+      }
+    }
+
+    // 4. Try Page Bridge
+    try {
+      const bridgeRes = await sendBridgeAction('SET_CODE', { code: newCode });
+      if (bridgeRes && bridgeRes.success) return true;
+    } catch (e) {}
+
+    // 5. Try Textarea fallback
+    const textarea = document.querySelector('textarea.editor, .editor textarea, textarea');
+    if (textarea && textarea.offsetParent !== null) {
+      textarea.value = newCode;
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+
+    return false;
   }
 
   // 3. UI Construction
@@ -572,7 +722,12 @@ REGELN:
           if (setSuccess) {
             setStatus('✅ Code eingefügt! Drücke jetzt auf ▶ Play im Webeditor.', 'success');
           } else {
-            setStatus('⚠️ Code generiert, konnte aber nicht automatisch eingefügt werden. Editor geöffnet?', 'error');
+            try {
+              await navigator.clipboard.writeText(response.code);
+              setStatus('⚠️ Code generiert & in Zwischenablage kopiert! (Drücke Cmd+V im Editor zum Einfügen)', 'error');
+            } catch (clipErr) {
+              setStatus('⚠️ Code generiert, konnte aber nicht automatisch eingefügt werden. Editor geöffnet?', 'error');
+            }
           }
         } else {
           const errMsg = response?.error || 'Unbekannter Fehler bei der Generierung.';
