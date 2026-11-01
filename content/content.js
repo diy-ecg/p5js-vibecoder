@@ -18,7 +18,6 @@
   let promptHistory = [];
   let chatSession = []; // Multi-turn conversational memory
   let isGenerating = false;
-  let activeMode = 'edit'; // 'edit' or 'create'
   let pendingRequests = new Map();
 
   // 1. Inject Page Bridge
@@ -93,18 +92,19 @@
     }
   }
 
-  async function callSingleGeminiModel({ prompt, currentCode, mode, apiKey, model, chatSession }) {
+  async function callSingleGeminiModel({ prompt, currentCode, apiKey, model, chatSession }) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
 
     let userInstruction = '';
     const hasHistory = chatSession && chatSession.length > 0;
+    const hasExistingCode = currentCode && currentCode.trim().length > 30;
 
     if (hasHistory) {
       userInstruction = `Folge-Anweisung im laufenden Chat: "${prompt}"\n\nAktueller Code im Webeditor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nBitte passe den Code basierend auf dem bisherigen Chat-Verlauf und dieser Anweisung an. Gib den vollständigen p5.js Code zurück.`;
-    } else if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
-      userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
-    } else {
+    } else if (hasExistingCode) {
       userInstruction = `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
+    } else {
+      userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
     }
 
     const currentTurn = {
@@ -164,7 +164,7 @@ REGELN:
     };
   }
 
-  async function requestGeminiApi({ prompt, currentCode, mode, apiKey, model, chatSession, onStatusUpdate }) {
+  async function requestGeminiApi({ prompt, currentCode, apiKey, model, chatSession, onStatusUpdate }) {
     // 1. Ensure verified models are loaded
     let verified = config.availableModels;
     if (!verified || verified.length === 0) {
@@ -203,7 +203,6 @@ REGELN:
           const res = await callSingleGeminiModel({
             prompt,
             currentCode,
-            mode,
             apiKey,
             model: currentModel,
             chatSession
@@ -549,12 +548,6 @@ REGELN:
           </div>
         </div>
 
-        <!-- Mode Switcher -->
-        <div class="p5-vibe-mode-switch">
-          <button class="p5-vibe-mode-btn active" id="p5-vibe-mode-edit" data-mode="edit">✨ Sketch anpassen</button>
-          <button class="p5-vibe-mode-btn" id="p5-vibe-mode-create" data-mode="create">🆕 Neuer Sketch</button>
-        </div>
-
         <!-- Prompt Header with Chat Indicator and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
@@ -620,8 +613,6 @@ REGELN:
     const modelLabel = panel.querySelector('#p5-vibe-model-label');
     const btnMinimize = panel.querySelector('#p5-vibe-btn-minimize');
     const btnClose = panel.querySelector('#p5-vibe-btn-close');
-    const modeEditBtn = panel.querySelector('#p5-vibe-mode-edit');
-    const modeCreateBtn = panel.querySelector('#p5-vibe-mode-create');
     const promptText = panel.querySelector('#p5-vibe-prompt-text');
     const btnGenerate = panel.querySelector('#p5-vibe-btn-generate');
     const btnUndo = panel.querySelector('#p5-vibe-btn-undo');
@@ -825,22 +816,6 @@ REGELN:
       setStatus('Chat-Kontext zurückgesetzt. Neuer Dialog begonnen.', 'info');
     }
 
-    // Mode Switcher
-    modeEditBtn.addEventListener('click', () => {
-      activeMode = 'edit';
-      modeEditBtn.classList.add('active');
-      modeCreateBtn.classList.remove('active');
-      promptText.placeholder = 'Was möchtest du am bestehenden Sketch ändern oder hinzufügen?';
-    });
-
-    modeCreateBtn.addEventListener('click', () => {
-      activeMode = 'create';
-      modeCreateBtn.classList.add('active');
-      modeEditBtn.classList.remove('active');
-      resetChatSession();
-      promptText.placeholder = 'Beschreibe eine völlig neue Idee für einen Sketch...';
-    });
-
     // Prompt History UI & Navigation
     const btnHistory = panel.querySelector('#p5-vibe-btn-history');
     const historyDrawer = panel.querySelector('#p5-vibe-history-drawer');
@@ -1023,10 +998,9 @@ REGELN:
           response = await requestGeminiApi({
             prompt: prompt,
             currentCode: currentCode,
-            mode: activeMode,
             apiKey: config.apiKey,
             model: config.model,
-            chatSession: activeMode === 'create' ? [] : chatSession,
+            chatSession: chatSession,
             onStatusUpdate: (msg) => setStatus(msg, 'loading')
           });
         } catch (directErr) {
@@ -1036,18 +1010,14 @@ REGELN:
             action: 'GENERATE_CODE',
             prompt: prompt,
             currentCode: currentCode,
-            mode: activeMode,
             apiKey: config.apiKey,
             model: config.model,
-            chatSession: activeMode === 'create' ? [] : chatSession
+            chatSession: chatSession
           });
         }
 
         if (response && response.success && response.code) {
           // Record conversational turn in chatSession for multi-turn chat
-          if (activeMode === 'create') {
-            chatSession = [];
-          }
           chatSession.push(
             { role: 'user', parts: [{ text: response.userInstruction || prompt }] },
             { role: 'model', parts: [{ text: `\`\`\`javascript\n${response.code}\n\`\`\`` }] }

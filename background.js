@@ -87,13 +87,14 @@ async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model, ch
 
     let userInstruction = '';
     const hasHistory = chatSession && chatSession.length > 0;
+    const hasExistingCode = currentCode && currentCode.trim().length > 30;
 
     if (hasHistory) {
       userInstruction = `Folge-Anweisung im Chat: "${prompt}"\n\nAktueller Code im Webeditor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nBitte passe den Code basierend auf dem bisherigen Chat-Verlauf und dieser Anweisung an. Gib den vollständigen p5.js Code zurück.`;
-    } else if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
-      userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
-    } else {
+    } else if (hasExistingCode) {
       userInstruction = `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
+    } else {
+      userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
     }
 
     const currentTurn = { role: 'user', parts: [{ text: userInstruction }] };
