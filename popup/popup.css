@@ -1,0 +1,232 @@
+:root {
+  --bg: #18191f;
+  --surface: #22242c;
+  --surface-hover: #2b2e38;
+  --border: #353844;
+  --primary: #ed225d;
+  --primary-hover: #ff3370;
+  --text: #f0f2f5;
+  --text-muted: #9aa0a6;
+  --success: #10b981;
+  --warning: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 330px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.popup-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-box {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #ed225d, #9b51e0);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(237, 34, 93, 0.4);
+}
+
+.header-titles h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.header-titles .version {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.popup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warning);
+}
+
+.status-indicator.ready {
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.input-password-row {
+  display: flex;
+  position: relative;
+  align-items: center;
+}
+
+input[type="text"],
+input[type="password"],
+select {
+  width: 100%;
+  background: #14151a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--primary);
+}
+
+.btn-eye {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 13px;
+}
+
+.link-external {
+  font-size: 11px;
+  color: #60a5fa;
+  text-decoration: none;
+  margin-top: 2px;
+}
+
+.link-external:hover {
+  text-decoration: underline;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), #d4144e);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.save-feedback {
+  min-height: 16px;
+  font-size: 11px;
+  color: var(--success);
+  text-align: center;
+}
+
+.shortcuts-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+}
+
+.shortcuts-card h4 {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.shortcuts-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+kbd {
+  background: #2b2e38;
+  border: 1px solid #434857;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+  font-family: monospace;
+}
+
+.popup-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.btn-open-editor {
+  display: block;
+  text-align: center;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 12px;
+  transition: background 0.15s ease;
+}
+
+.btn-open-editor:hover {
+  background: var(--surface-hover);
+}
