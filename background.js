@@ -3,7 +3,7 @@
  * Handles Gemini API requests and storage management.
  */
 
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+const DEFAULT_MODEL = 'gemini-2.0-flash';
 
 // Listen for messages from content script and popup (Promise-based for Firefox WebExtensions)
 browser.runtime.onMessage.addListener((message, sender) => {
@@ -71,35 +71,31 @@ async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model }) 
     };
   }
 
-  let selectedModel = model || DEFAULT_MODEL;
-  // Automatically migrate deprecated model names
-  if (selectedModel.includes('2.5-flash') || selectedModel.includes('1.5-flash')) {
-    selectedModel = 'gemini-3.8-flash';
-  } else if (selectedModel.includes('2.5-pro') || selectedModel.includes('1.5-pro')) {
-    selectedModel = 'gemini-3.8-pro';
-  }
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+  let baseModel = model || DEFAULT_MODEL;
+  if (baseModel.includes('2.5-flash')) baseModel = 'gemini-2.0-flash';
+  if (baseModel.includes('2.5-pro')) baseModel = 'gemini-3.8-pro';
 
-  // Build appropriate instructions based on mode
-  let userInstruction = '';
-  if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
-    userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
-  } else {
-    userInstruction = `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
+  const cascade = [baseModel];
+  for (const alt of ['gemini-2.0-flash', 'gemini-3.8-flash', 'gemini-1.5-flash']) {
+    if (!cascade.includes(alt)) cascade.push(alt);
   }
 
-  const requestBody = {
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { text: userInstruction }
-        ]
-      }
-    ],
-    systemInstruction: {
-      parts: [
-        {
+  let lastError = null;
+
+  for (const currentModel of cascade) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(currentModel)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+
+    let userInstruction = '';
+    if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
+      userInstruction = `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
+    } else {
+      userInstruction = `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
+    }
+
+    const requestBody = {
+      contents: [{ role: 'user', parts: [{ text: userInstruction }] }],
+      systemInstruction: {
+        parts: [{
           text: `Du bist ein brillanter Creative Coder und p5.js Spezialist.
 Deine Aufgabe ist es, hochwertigen, ästhetischen und fehlerfreien p5.js Code (JavaScript) für den p5.js Web-Editor zu generieren.
 
@@ -109,54 +105,54 @@ REGELN:
 3. Der Code MUSS standardmäßige p5.js Methoden enthalten wie setup() und draw() (sofern animiert/interaktiv).
 4. Sorge für flüssige 60 FPS Performance und saubere Canvas-Initialisierung (z.B. createCanvas(400, 400) oder windowWidth/windowHeight falls passend).
 5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.`
-        }
-      ]
-    },
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 8192
-    }
-  };
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+        }]
       },
-      body: JSON.stringify(requestBody)
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const errorMsg = data?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-      if (response.status === 400 && errorMsg.includes('API key')) {
-        return { success: false, error: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key.' };
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8192
       }
-      if (response.status === 429) {
-        return { success: false, error: 'Gemini Rate-Limit erreicht (Zu viele Anfragen). Bitte warte kurz.' };
+    };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMsg = data?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+        lastError = errorMsg;
+        const low = errorMsg.toLowerCase();
+        if (low.includes('api key') && !low.includes('quota')) {
+          return { success: false, error: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key.' };
+        }
+        // Try next model if high demand / overloaded
+        continue;
       }
-      return { success: false, error: `Gemini API Fehler: ${errorMsg}` };
+
+      const candidate = data.candidates?.[0];
+      if (!candidate || !candidate.content?.parts?.[0]?.text) {
+        continue;
+      }
+
+      const rawCode = candidate.content.parts[0].text;
+      const finalCode = cleanGeneratedCode(rawCode);
+
+      return {
+        success: true,
+        code: finalCode,
+        modelUsed: currentModel
+      };
+    } catch (networkError) {
+      lastError = networkError.message;
     }
-
-    const candidate = data.candidates?.[0];
-    if (!candidate || !candidate.content?.parts?.[0]?.text) {
-      const blockReason = candidate?.finishReason || 'Keine Antwort erhalten';
-      return { success: false, error: `Kein Code generiert (${blockReason}).` };
-    }
-
-    const rawCode = candidate.content.parts[0].text;
-    const finalCode = cleanGeneratedCode(rawCode);
-
-    return {
-      success: true,
-      code: finalCode
-    };
-  } catch (networkError) {
-    return {
-      success: false,
-      error: `Netzwerkfehler: ${networkError.message || 'Verbindung zu Google Gemini fehlgeschlagen.'}`
-    };
   }
+
+  return {
+    success: false,
+    error: `Gemini API Fehler: ${lastError || 'Alle Modelle sind momentan überlastet.'}`
+  };
 }

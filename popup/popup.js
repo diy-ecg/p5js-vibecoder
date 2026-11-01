@@ -23,8 +23,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (data.geminiModel) {
       let m = data.geminiModel;
-      if (m.includes('2.5-flash') || m.includes('1.5-flash')) m = 'gemini-3.8-flash';
-      if (m.includes('2.5-pro') || m.includes('1.5-pro')) m = 'gemini-3.8-pro';
+      if (m.includes('2.5-flash')) m = 'gemini-2.0-flash';
+      if (m.includes('2.5-pro')) m = 'gemini-3.8-pro';
       modelSelect.value = m;
       if (m !== data.geminiModel) {
         browser.storage.local.set({ geminiModel: m });

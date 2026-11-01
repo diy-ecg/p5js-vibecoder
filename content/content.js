@@ -30,7 +30,7 @@
     }
   }
 
-  // 2. Direct Gemini API Request (fallback-resistant)
+  // 2. Direct Gemini API Request with Automatic Multi-Model Fallback Cascade
   function cleanGeneratedCode(rawText) {
     if (!rawText) return '';
     let text = rawText.trim();
@@ -52,15 +52,23 @@
     return text;
   }
 
-  async function requestGeminiApi({ prompt, currentCode, mode, apiKey, model }) {
-    let selectedModel = model || 'gemini-3.8-flash';
-    if (selectedModel.includes('2.5-flash') || selectedModel.includes('1.5-flash')) {
-      selectedModel = 'gemini-3.8-flash';
-    } else if (selectedModel.includes('2.5-pro') || selectedModel.includes('1.5-pro')) {
-      selectedModel = 'gemini-3.8-pro';
-    }
+  function getModelCascade(preferredModel) {
+    let base = preferredModel || 'gemini-2.0-flash';
+    if (base.includes('2.5-flash')) base = 'gemini-2.0-flash';
+    if (base.includes('2.5-pro')) base = 'gemini-3.8-pro';
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+    const order = [base];
+    const alternates = ['gemini-2.0-flash', 'gemini-3.8-flash', 'gemini-1.5-flash'];
+    for (const alt of alternates) {
+      if (!order.includes(alt)) {
+        order.push(alt);
+      }
+    }
+    return order;
+  }
+
+  async function callSingleGeminiModel({ prompt, currentCode, mode, apiKey, model }) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
 
     let userInstruction = '';
     if (mode === 'create' || !currentCode || currentCode.trim().length === 0) {
@@ -99,13 +107,11 @@ REGELN:
     const data = await response.json();
     if (!response.ok) {
       const errorMsg = data?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-      if (response.status === 400 && errorMsg.includes('API key')) {
-        return { success: false, error: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key in den Einstellungen.' };
-      }
-      if (response.status === 429) {
-        return { success: false, error: 'Gemini Rate-Limit erreicht (Zu viele Anfragen). Bitte kurz warten.' };
-      }
-      return { success: false, error: `Gemini API Fehler: ${errorMsg}` };
+      return {
+        success: false,
+        error: errorMsg,
+        status: response.status
+      };
     }
 
     const candidate = data.candidates?.[0];
@@ -116,6 +122,83 @@ REGELN:
     return {
       success: true,
       code: cleanGeneratedCode(candidate.content.parts[0].text)
+    };
+  }
+
+  async function requestGeminiApi({ prompt, currentCode, mode, apiKey, model, onStatusUpdate }) {
+    const cascade = getModelCascade(model);
+    let lastError = null;
+
+    for (let i = 0; i < cascade.length; i++) {
+      const currentModel = cascade[i];
+
+      if (i > 0 && typeof onStatusUpdate === 'function') {
+        onStatusUpdate(`Auslastungsspitze bei ${cascade[i - 1]} – wechsle automatisch zu ${currentModel}...`);
+      }
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const res = await callSingleGeminiModel({
+            prompt,
+            currentCode,
+            mode,
+            apiKey,
+            model: currentModel
+          });
+
+          if (res.success) {
+            return {
+              success: true,
+              code: res.code,
+              modelUsed: currentModel
+            };
+          }
+
+          const errMsg = (res.error || '').toLowerCase();
+          const isOverloaded = errMsg.includes('high demand') ||
+                               errMsg.includes('spikes in demand') ||
+                               errMsg.includes('temporarily') ||
+                               errMsg.includes('overloaded') ||
+                               errMsg.includes('503') ||
+                               errMsg.includes('429') ||
+                               errMsg.includes('resource exhausted') ||
+                               errMsg.includes('quota');
+
+          lastError = res.error;
+
+          // If invalid key, do not retry
+          if (errMsg.includes('api key') && !errMsg.includes('quota')) {
+            return {
+              success: false,
+              error: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key in den Einstellungen.'
+            };
+          }
+
+          if (isOverloaded) {
+            if (attempt === 1) {
+              if (typeof onStatusUpdate === 'function') {
+                onStatusUpdate(`${currentModel} ist ausgelastet – erneuter Versuch in 1 Sekunde...`);
+              }
+              await new Promise(r => setTimeout(r, 1000));
+              continue;
+            } else {
+              // Move to next model in cascade
+              break;
+            }
+          } else {
+            // Some other error, try next model in cascade
+            break;
+          }
+        } catch (err) {
+          lastError = err.message;
+          break;
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: lastError || 'Alle Gemini-Modelle sind momentan ausgelastet. Bitte versuche es kurz erneut.'
     };
   }
 
@@ -386,9 +469,10 @@ REGELN:
           <div class="p5-vibe-field">
             <label for="p5-vibe-model-select">Gemini Modell</label>
             <select id="p5-vibe-model-select" class="p5-vibe-select">
-              <option value="gemini-3.8-flash">Gemini 3.8 Flash (Empfohlen, schnell & smart)</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash (Sehr stabil & schnell – Empfohlen)</option>
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash (Neueste Generation)</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Klassisch)</option>
               <option value="gemini-3.8-pro">Gemini 3.8 Pro (Präzise für komplexe Mathematik)</option>
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
             </select>
           </div>
         </div>
@@ -542,12 +626,14 @@ REGELN:
     });
 
     function updateModelBadge() {
-      if (config.model.includes('3.8-pro') || config.model.includes('2.5-pro')) {
+      if (config.model.includes('3.8-pro')) {
         modelLabel.textContent = 'Gemini 3.8 Pro';
-      } else if (config.model.includes('3.8-flash') || config.model.includes('2.5-flash') || config.model.includes('1.5-flash')) {
+      } else if (config.model.includes('3.8-flash')) {
         modelLabel.textContent = 'Gemini 3.8 Flash';
       } else if (config.model.includes('2.0')) {
-        modelLabel.textContent = 'Gemini 2.0';
+        modelLabel.textContent = 'Gemini 2.0 Flash';
+      } else if (config.model.includes('1.5')) {
+        modelLabel.textContent = 'Gemini 1.5 Flash';
       } else {
         modelLabel.textContent = 'Gemini';
       }
@@ -685,7 +771,7 @@ REGELN:
         // Read current editor code
         const currentCode = await getEditorCode();
 
-        // 1. Try direct API request from content script (instant & avoids IPC connection drops)
+        // 1. Try direct API request from content script (with auto-fallback cascade)
         let response;
         try {
           response = await requestGeminiApi({
@@ -693,7 +779,8 @@ REGELN:
             currentCode: currentCode,
             mode: activeMode,
             apiKey: config.apiKey,
-            model: config.model
+            model: config.model,
+            onStatusUpdate: (msg) => setStatus(msg, 'loading')
           });
         } catch (directErr) {
           console.warn('[p5-vibe] Direct fetch fallback to background script:', directErr);
@@ -720,7 +807,10 @@ REGELN:
           const setSuccess = await setEditorCode(response.code);
 
           if (setSuccess) {
-            setStatus('✅ Code eingefügt! Drücke jetzt auf ▶ Play im Webeditor.', 'success');
+            const modelNotice = response.modelUsed && response.modelUsed !== config.model 
+              ? ` (Fallback auf ${response.modelUsed})` 
+              : '';
+            setStatus(`✅ Code eingefügt!${modelNotice} Drücke jetzt auf ▶ Play im Webeditor.`, 'success');
           } else {
             try {
               await navigator.clipboard.writeText(response.code);
@@ -771,8 +861,8 @@ REGELN:
       if (data.geminiModel) {
         let m = data.geminiModel;
         // Migrate deprecated model names automatically
-        if (m.includes('2.5-flash') || m.includes('1.5-flash')) m = 'gemini-3.8-flash';
-        if (m.includes('2.5-pro') || m.includes('1.5-pro')) m = 'gemini-3.8-pro';
+        if (m.includes('2.5-flash')) m = 'gemini-2.0-flash';
+        if (m.includes('2.5-pro')) m = 'gemini-3.8-pro';
         config.model = m;
         if (m !== data.geminiModel) {
           browser.storage.local.set({ geminiModel: m });
@@ -782,7 +872,8 @@ REGELN:
       if (modelLabel) {
         if (config.model.includes('3.8-pro')) modelLabel.textContent = 'Gemini 3.8 Pro';
         else if (config.model.includes('3.8-flash')) modelLabel.textContent = 'Gemini 3.8 Flash';
-        else if (config.model.includes('2.0')) modelLabel.textContent = 'Gemini 2.0';
+        else if (config.model.includes('2.0')) modelLabel.textContent = 'Gemini 2.0 Flash';
+        else if (config.model.includes('1.5')) modelLabel.textContent = 'Gemini 1.5 Flash';
         else modelLabel.textContent = 'Gemini';
       }
 
