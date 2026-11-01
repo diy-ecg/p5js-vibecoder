@@ -1299,6 +1299,11 @@ REGELN:
           const setSuccess = await setEditorCode(response.code);
 
           if (setSuccess) {
+            // Clear prompt field so it is clean for the next idea
+            promptText.value = '';
+            draftPrompt = '';
+            historyNavIndex = -1;
+
             if (config.autoRun) {
               setTimeout(() => {
                 triggerPlaySketch();

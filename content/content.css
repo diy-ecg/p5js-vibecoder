@@ -49,6 +49,12 @@
   box-sizing: border-box;
 }
 
+#p5-vibe-panel button {
+  font-family: var(--p5-vibe-font);
+  color: inherit;
+  outline: none;
+}
+
 #p5-vibe-panel.p5-vibe-hidden {
   display: none !important;
 }
@@ -111,10 +117,10 @@
   gap: 4px;
 }
 
-.p5-vibe-icon-btn {
-  background: transparent;
-  border: none;
-  color: var(--p5-vibe-text-muted);
+#p5-vibe-panel .p5-vibe-icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1 !important;
   width: 26px;
   height: 26px;
   border-radius: 6px;
@@ -123,17 +129,32 @@
   justify-content: center;
   cursor: pointer;
   font-size: 14px;
+  line-height: 1;
   transition: all 0.15s ease;
 }
 
-.p5-vibe-icon-btn:hover {
-  background: var(--p5-vibe-surface-hover);
-  color: var(--p5-vibe-text);
+#p5-vibe-panel .p5-vibe-icon-btn * {
+  color: #cbd5e1 !important;
 }
 
-.p5-vibe-icon-btn.active {
-  background: rgba(237, 34, 93, 0.2);
-  color: var(--p5-vibe-primary);
+#p5-vibe-panel .p5-vibe-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-icon-btn:hover * {
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-icon-btn.active {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-icon-btn.active * {
+  color: #ffffff !important;
 }
 
 /* Scrollable Content Body */
@@ -210,7 +231,7 @@
   right: 6px;
   background: none;
   border: none;
-  color: var(--p5-vibe-text-muted);
+  color: #cbd5e1 !important;
   cursor: pointer;
   font-size: 13px;
   padding: 4px;
@@ -300,9 +321,9 @@
 }
 
 .p5-vibe-btn-reset-chat {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border: none;
-  color: inherit;
+  color: #cbd5e1 !important;
   cursor: pointer;
   padding: 1px 5px;
   border-radius: 4px;
@@ -313,14 +334,14 @@
 }
 
 .p5-vibe-btn-reset-chat:hover {
-  background: rgba(239, 68, 68, 0.25);
-  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff !important;
 }
 
-.p5-vibe-btn-history {
+#p5-vibe-panel .p5-vibe-btn-history {
   background: transparent;
   border: none;
-  color: #60a5fa;
+  color: #94a3b8 !important;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -329,14 +350,26 @@
   transition: all 0.15s ease;
 }
 
-.p5-vibe-btn-history:hover {
-  background: rgba(96, 165, 250, 0.15);
-  color: #93c5fd;
+#p5-vibe-panel .p5-vibe-btn-history * {
+  color: #94a3b8 !important;
 }
 
-.p5-vibe-btn-history.active {
-  background: rgba(96, 165, 250, 0.25);
-  color: #fff;
+#p5-vibe-panel .p5-vibe-btn-history:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9 !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-history:hover * {
+  color: #f1f5f9 !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-history.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-history.active * {
+  color: #ffffff !important;
 }
 
 .p5-vibe-prompt-tools {
@@ -537,65 +570,95 @@
   gap: 8px;
 }
 
-.p5-vibe-btn-primary {
+#p5-vibe-panel .p5-vibe-btn-primary {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, var(--p5-vibe-primary) 0%, #d4144e 100%);
-  border: none;
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 8px;
   padding: 9px 14px;
-  color: #ffffff;
+  color: #ffffff !important;
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 4px 14px var(--p5-vibe-primary-glow);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
   transition: all 0.15s ease;
 }
 
-.p5-vibe-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--p5-vibe-primary-hover) 0%, var(--p5-vibe-primary) 100%);
-  box-shadow: 0 6px 18px rgba(237, 34, 93, 0.5);
+#p5-vibe-panel .p5-vibe-btn-primary * {
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%) !important;
+  box-shadow: 0 6px 18px rgba(244, 63, 94, 0.5);
   transform: translateY(-1px);
 }
 
-.p5-vibe-btn-primary:active:not(:disabled) {
+#p5-vibe-panel .p5-vibe-btn-primary:hover:not(:disabled) * {
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-primary:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.p5-vibe-btn-primary:disabled {
-  opacity: 0.6;
+#p5-vibe-panel .p5-vibe-btn-primary:disabled {
+  opacity: 0.7;
   cursor: not-allowed;
   box-shadow: none;
+  background: #334155 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
 }
 
-.p5-vibe-btn-secondary {
+#p5-vibe-panel .p5-vibe-btn-primary:disabled * {
+  color: #cbd5e1 !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-secondary {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: var(--p5-vibe-surface);
-  border: 1px solid var(--p5-vibe-border);
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 8px;
   padding: 9px 14px;
-  color: #e2e8f0;
+  color: #e2e8f0 !important;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.p5-vibe-btn-secondary:hover:not(:disabled) {
-  background: var(--p5-vibe-surface-hover);
-  color: #ffffff;
+#p5-vibe-panel .p5-vibe-btn-secondary * {
+  color: #e2e8f0 !important;
 }
 
-.p5-vibe-btn-secondary:disabled {
-  opacity: 0.45;
-  color: #64748b;
+#p5-vibe-panel .p5-vibe-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-secondary:hover:not(:disabled) * {
+  color: #ffffff !important;
+}
+
+#p5-vibe-panel .p5-vibe-btn-secondary:disabled {
+  opacity: 0.5;
+  color: #94a3b8 !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
   cursor: not-allowed;
+}
+
+#p5-vibe-panel .p5-vibe-btn-secondary:disabled * {
+  color: #94a3b8 !important;
 }
 
 /* Status & Feedback Area */
