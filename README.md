@@ -13,7 +13,11 @@ Gib einfach auf Deutsch oder Englisch ein, was du programmieren oder ändern mö
 - **Zwei Modi**:
   - `✨ Sketch anpassen`: Liest deinen aktuellen Code aus und baut Erweiterungen oder Änderungen gezielt ein.
   - `🆕 Neuer Sketch`: Generiert einen frischen Sketch von Grund auf.
-- **↩ Undo-Funktion**: Macht die letzte KI-Änderung mit einem Klick rückgängig, falls ein Prompt nicht das gewünschte Ergebnis geliefert hat.
+- **💬 Echter Multi-Turn Chat**:
+  - Die KI behält den gesamten Dialog-Verlauf im Gedächtnis!
+  - Folgeprompts wie *„Mache es bitte grün“*, *„Lass es schneller kreisen“* oder *„Füge jetzt noch Sound hinzu“* verstehen sich auf das zuvor Erstellte.
+  - Dynamischer Status-Badge zeigt an, wie viele Chat-Runden aktiv sind (inkl. Reset-Button `×` für einen neuen Dialog).
+- **↩ Undo-Funktion**: Macht die letzte KI-Änderung mit einem Klick rückgängig – und spult gleichzeitig auch das Gedächtnis des Chats um eine Runde zurück!
 - **🕒 Prompt-Verlauf (History)**:
   - Speichert deine letzten Prompts dauerhaft im Browser.
   - Klickbarer **„🕒 Verlauf“**-Button mit Liste aller bisherigen Prompts.
