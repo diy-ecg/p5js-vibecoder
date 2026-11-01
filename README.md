@@ -13,10 +13,10 @@ Gib einfach auf Deutsch oder Englisch ein, was du programmieren oder ändern mö
 - **Zwei Modi**:
   - `✨ Sketch anpassen`: Liest deinen aktuellen Code aus und baut Erweiterungen oder Änderungen gezielt ein.
   - `🆕 Neuer Sketch`: Generiert einen frischen Sketch von Grund auf.
-- **💬 Echter Multi-Turn Chat**:
-  - Die KI behält den gesamten Dialog-Verlauf im Gedächtnis!
-  - Folgeprompts wie *„Mache es bitte grün“*, *„Lass es schneller kreisen“* oder *„Füge jetzt noch Sound hinzu“* verstehen sich auf das zuvor Erstellte.
-  - Dynamischer Status-Badge zeigt an, wie viele Chat-Runden aktiv sind (inkl. Reset-Button `×` für einen neuen Dialog).
+- **💬 Echter Multi-Turn Chat & Schlankes Interface**:
+  - Kein manuelles Umschalten zwischen Modi nötig: Das Plugin erkennt automatisch, ob du an einem bestehenden Sketch weiterbaust oder bei leerem Editor von Grund auf neu startest.
+  - Die KI behält den gesamten Dialog-Verlauf im Gedächtnis (*„Mache es grün“*, *„Lass es pulsieren“* etc.).
+  - Mit dem kleinen **`×`**-Reset auf der Chat-Pille startest du jederzeit einen frischen Dialog für eine neue Idee.
 - **↩ Undo-Funktion**: Macht die letzte KI-Änderung mit einem Klick rückgängig – und spult gleichzeitig auch das Gedächtnis des Chats um eine Runde zurück!
 - **🕒 Prompt-Verlauf (History)**:
   - Speichert deine letzten Prompts dauerhaft im Browser.
