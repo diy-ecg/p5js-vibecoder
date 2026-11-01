@@ -9,7 +9,7 @@ Gib einfach auf Deutsch oder Englisch ein, was du programmieren oder ändern mö
 ## 🚀 Features
 
 - **Schwebendes Panel (Floating Panel)**: Frei über den Webeditor verschiebbar (Drag & Drop am Header) und minimierbar zu einem dezenten Badge.
-- **Google Gemini Anbindung**: Unterstützt **Gemini 2.5 Flash** (schnell & smart), **Gemini 2.0 Flash** und **Gemini 2.5 Pro** (für komplexe 3D- & Mathe-Sketche).
+- **Google Gemini Anbindung**: Unterstützt **Gemini 3.8 Flash** (schnell & smart) und **Gemini 3.8 Pro** (für komplexe 3D- & Mathe-Sketche).
 - **Zwei Modi**:
   - `✨ Sketch anpassen`: Liest deinen aktuellen Code aus und baut Erweiterungen oder Änderungen gezielt ein.
   - `🆕 Neuer Sketch`: Generiert einen frischen Sketch von Grund auf.

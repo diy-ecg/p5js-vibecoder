@@ -3,7 +3,7 @@
  * Handles Gemini API requests and storage management.
  */
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
 
 // Listen for messages from content script and popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -78,7 +78,13 @@ async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model }) 
     };
   }
 
-  const selectedModel = model || DEFAULT_MODEL;
+  let selectedModel = model || DEFAULT_MODEL;
+  // Automatically migrate deprecated model names
+  if (selectedModel.includes('2.5-flash') || selectedModel.includes('1.5-flash')) {
+    selectedModel = 'gemini-3.8-flash';
+  } else if (selectedModel.includes('2.5-pro') || selectedModel.includes('1.5-pro')) {
+    selectedModel = 'gemini-3.8-pro';
+  }
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(selectedModel)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
 
   // Build appropriate instructions based on mode

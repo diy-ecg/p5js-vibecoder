@@ -10,7 +10,7 @@
   // State
   let config = {
     apiKey: '',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.8-flash',
     isMinimized: false
   };
   let codeHistory = [];
@@ -121,7 +121,7 @@
         <div class="p5-vibe-title-group">
           <div class="p5-vibe-badge-logo">⚡</div>
           <span class="p5-vibe-title">p5 Vibe Coder</span>
-          <span class="p5-vibe-model-tag" id="p5-vibe-model-label">Gemini 2.5</span>
+          <span class="p5-vibe-model-tag" id="p5-vibe-model-label">Gemini 3.8</span>
         </div>
         <div class="p5-vibe-actions">
           <button class="p5-vibe-icon-btn" id="p5-vibe-btn-settings" title="Einstellungen (API-Key)">⚙</button>
@@ -147,10 +147,9 @@
           <div class="p5-vibe-field">
             <label for="p5-vibe-model-select">Gemini Modell</label>
             <select id="p5-vibe-model-select" class="p5-vibe-select">
-              <option value="gemini-2.5-flash">Gemini 2.5 Flash (Empfohlen, schnell & smart)</option>
+              <option value="gemini-3.8-flash">Gemini 3.8 Flash (Empfohlen, schnell & smart)</option>
+              <option value="gemini-3.8-pro">Gemini 3.8 Pro (Präzise für komplexe Mathematik)</option>
               <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-              <option value="gemini-2.5-pro">Gemini 2.5 Pro (Präzise für komplexe Mathematik)</option>
             </select>
           </div>
         </div>
@@ -304,14 +303,14 @@
     });
 
     function updateModelBadge() {
-      if (config.model.includes('2.5-pro')) {
-        modelLabel.textContent = 'Gemini 2.5 Pro';
-      } else if (config.model.includes('2.5-flash')) {
-        modelLabel.textContent = 'Gemini 2.5 Flash';
+      if (config.model.includes('3.8-pro') || config.model.includes('2.5-pro')) {
+        modelLabel.textContent = 'Gemini 3.8 Pro';
+      } else if (config.model.includes('3.8-flash') || config.model.includes('2.5-flash') || config.model.includes('1.5-flash')) {
+        modelLabel.textContent = 'Gemini 3.8 Flash';
       } else if (config.model.includes('2.0')) {
         modelLabel.textContent = 'Gemini 2.0';
       } else {
-        modelLabel.textContent = 'Gemini 1.5';
+        modelLabel.textContent = 'Gemini';
       }
     }
 
@@ -508,14 +507,21 @@
       }
 
       if (data.geminiModel) {
-        config.model = data.geminiModel;
-        if (modelSelect) modelSelect.value = data.geminiModel;
-        if (modelLabel) {
-          if (config.model.includes('2.5-pro')) modelLabel.textContent = 'Gemini 2.5 Pro';
-          else if (config.model.includes('2.5-flash')) modelLabel.textContent = 'Gemini 2.5 Flash';
-          else if (config.model.includes('2.0')) modelLabel.textContent = 'Gemini 2.0';
-          else modelLabel.textContent = 'Gemini 1.5';
+        let m = data.geminiModel;
+        // Migrate deprecated model names automatically
+        if (m.includes('2.5-flash') || m.includes('1.5-flash')) m = 'gemini-3.8-flash';
+        if (m.includes('2.5-pro') || m.includes('1.5-pro')) m = 'gemini-3.8-pro';
+        config.model = m;
+        if (m !== data.geminiModel) {
+          browser.storage.local.set({ geminiModel: m });
         }
+        if (modelSelect) modelSelect.value = m;
+      }
+      if (modelLabel) {
+        if (config.model.includes('3.8-pro')) modelLabel.textContent = 'Gemini 3.8 Pro';
+        else if (config.model.includes('3.8-flash')) modelLabel.textContent = 'Gemini 3.8 Flash';
+        else if (config.model.includes('2.0')) modelLabel.textContent = 'Gemini 2.0';
+        else modelLabel.textContent = 'Gemini';
       }
 
       if (data.p5VibePosition && panel) {
