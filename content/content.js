@@ -31,7 +31,7 @@
   const I18N = {
     de: {
       panelTitle: 'p5.js Vibe Coder',
-      pillTitle: 'Klicken zum Öffnen des p5.js Vibe Coder Panels',
+      pillTitle: 'Klicken zum Öffnen des p5.js Vibe Coder Panels (Alt+V)',
       modelBadgeTitle: (m) => `Aktives Modell: ${m}`,
       btnSettingsTitle: 'Einstellungen (API-Key & Sprache)',
       btnMinimizeTitle: 'Minimieren',
@@ -48,8 +48,8 @@
       chatIndicatorActive: (n) => `💬 Chat (${n} ${n === 1 ? 'Runde' : 'Runden'})`,
       chatIndicatorActiveTitle: (n) => `${n} vorherige Chat-${n === 1 ? 'Runde fließt' : 'Runden fließen'} als Kontext mit ein. Klicke × zum Zurücksetzen.`,
       resetChatTitle: 'Chat-Kontext zurücksetzen',
-      autoPlayTitle: 'Auto-Play: Startet das p5.js Skript nach Generierung direkt (on/off)',
-      autoPlayText: 'Auto-Play',
+      autoStartTitle: 'Auto-Start: Startet das p5.js Skript nach Generierung direkt (on/off)',
+      autoStartText: 'Auto-Start',
       historyBtn: (n) => `🕒 Verlauf (${n})`,
       historyBtnTitle: 'Verlauf bisheriger Prompts einsehen',
       historyHeader: 'Bisherige Prompts',
@@ -95,7 +95,7 @@
     },
     en: {
       panelTitle: 'p5.js Vibe Coder',
-      pillTitle: 'Click to open p5.js Vibe Coder panel',
+      pillTitle: 'Click to open p5.js Vibe Coder panel (Alt+V)',
       modelBadgeTitle: (m) => `Active model: ${m}`,
       btnSettingsTitle: 'Settings (API Key & Language)',
       btnMinimizeTitle: 'Minimize',
@@ -112,8 +112,8 @@
       chatIndicatorActive: (n) => `💬 Chat (${n} ${n === 1 ? 'round' : 'rounds'})`,
       chatIndicatorActiveTitle: (n) => `${n} previous chat ${n === 1 ? 'round is' : 'rounds are'} included as context. Click × to reset.`,
       resetChatTitle: 'Reset chat context',
-      autoPlayTitle: 'Auto-Play: Automatically runs the p5.js sketch after generation (on/off)',
-      autoPlayText: 'Auto-Play',
+      autoStartTitle: 'Auto-Start: Automatically runs the p5.js sketch after generation (on/off)',
+      autoStartText: 'Auto-Start',
       historyBtn: (n) => `🕒 History (${n})`,
       historyBtnTitle: 'View previous prompts',
       historyHeader: 'Previous Prompts',
@@ -889,7 +889,7 @@ REGELN:
    * Automatically start / run the sketch in the p5.js Web Editor
    */
   function triggerPlaySketch() {
-    console.log('[p5-vibe] Auto-Play trigger initiated');
+    console.log('[p5-vibe] Auto-Start trigger initiated');
 
     // 1. Send action to page-bridge (executes in pure page context)
     try {
@@ -1016,16 +1016,18 @@ REGELN:
 
   // 3. UI Construction
   function createUI() {
-    // Floating Pill (when minimized)
+    // Floating Pill (starts visible on initial page load)
     const pill = document.createElement('div');
     pill.id = 'p5-vibe-pill';
+    pill.className = 'visible';
     pill.innerHTML = `<span>⚡</span> <span>p5.js Vibe Coder</span>`;
     pill.title = t('pillTitle');
     document.body.appendChild(pill);
 
-    // Floating Main Panel
+    // Floating Main Panel (starts minimized/hidden on initial page load)
     const panel = document.createElement('div');
     panel.id = 'p5-vibe-panel';
+    panel.className = 'p5-vibe-hidden';
     panel.innerHTML = `
       <div class="p5-vibe-header" id="p5-vibe-drag-header">
         <div class="p5-vibe-title-group">
@@ -1074,16 +1076,16 @@ REGELN:
           </div>
         </div>
 
-        <!-- Prompt Header with Chat Indicator, Auto-Play Switch and History Button -->
+        <!-- Prompt Header with Chat Indicator, Auto-Start Switch and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
             <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="${t('chatIndicatorNewTitle')}">${t('chatIndicatorNew')}</span>
           </div>
           <div class="p5-vibe-prompt-tools">
-            <label class="p5-vibe-switch" title="${t('autoPlayTitle')}">
+            <label class="p5-vibe-switch" title="${t('autoStartTitle')}">
               <input type="checkbox" id="p5-vibe-autorun-toggle" checked />
               <span class="p5-vibe-switch-slider"></span>
-              <span class="p5-vibe-switch-text">${t('autoPlayText')}</span>
+              <span class="p5-vibe-switch-text">${t('autoStartText')}</span>
             </label>
             <button type="button" class="p5-vibe-btn-history" id="p5-vibe-btn-history" title="${t('historyBtnTitle')}">
               ${t('historyBtn', 0)}
@@ -1293,9 +1295,9 @@ REGELN:
       }
 
       const switchLabel = panel.querySelector('.p5-vibe-switch');
-      if (switchLabel) switchLabel.title = t('autoPlayTitle');
+      if (switchLabel) switchLabel.title = t('autoStartTitle');
       const switchText = panel.querySelector('.p5-vibe-switch-text');
-      if (switchText) switchText.textContent = t('autoPlayText');
+      if (switchText) switchText.textContent = t('autoStartText');
 
       if (btnFixError) btnFixError.title = t('fixErrorBtnTitle');
       if (btnFixErrorText) btnFixErrorText.textContent = t('fixErrorBtn');
@@ -1484,14 +1486,12 @@ REGELN:
     function minimizePanel() {
       panel.classList.add('p5-vibe-hidden');
       pill.classList.add('visible');
-      browser.storage.local.set({ p5VibeMinimized: true });
     }
 
     function expandPanel() {
       panel.classList.remove('p5-vibe-hidden');
       pill.classList.remove('visible');
       promptText.focus();
-      browser.storage.local.set({ p5VibeMinimized: false });
     }
 
     btnMinimize.addEventListener('click', minimizePanel);
@@ -1824,7 +1824,6 @@ REGELN:
       'geminiApiKey',
       'geminiModel',
       'p5VibePosition',
-      'p5VibeMinimized',
       'p5VibePromptHistory',
       'p5VibeAutoRun',
       'p5VibeLang'
@@ -1908,11 +1907,6 @@ REGELN:
         if (data.p5VibePosition.left) panel.style.left = data.p5VibePosition.left;
         if (data.p5VibePosition.top) panel.style.top = data.p5VibePosition.top;
         if (data.p5VibePosition.left) panel.style.right = 'auto';
-      }
-
-      if (data.p5VibeMinimized && panel && pill) {
-        panel.classList.add('p5-vibe-hidden');
-        pill.classList.add('visible');
       }
     });
   }

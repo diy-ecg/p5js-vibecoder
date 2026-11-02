@@ -21,9 +21,9 @@ Simply type what you want to visualize, build, or modify in natural language. Po
 - **New Chat Reset (`×`)**: Clear conversational memory with a single click to start a new sketch with a clean context.
 - **Auto-Clearing Prompt Box**: The prompt field automatically clears after generation so you can immediately type your next instruction without having to delete old text.
 
-### ▶️ Instant Auto-Play with React & Fiber Bridge
+### ▶️ Instant Auto-Start with React & Fiber Bridge
 - **Immediate Visual Feedback**: The generated sketch automatically starts running in the preview window as soon as generation completes — no need to manually click the Play button.
-- **On/Off Toggle**: A dedicated switch in the HUD header lets you disable or enable Auto-Play at any time (defaults to **ON**).
+- **On/Off Toggle**: A dedicated switch in the HUD header lets you disable or enable Auto-Start at any time (defaults to **ON**).
 - **Bulletproof Execution**: Leverages a multi-stage execution bridge (React 18 Fiber dispatch, synthetic PointerEvents, and keyboard shortcuts) that reliably triggers execution across browser sandbox and extension isolation boundaries.
 
 ### ↩ 1-Click Undo
@@ -48,7 +48,8 @@ Simply type what you want to visualize, build, or modify in natural language. Po
 ### 🎨 Ergonomic Floating Dark HUD
 - Fully draggable floating panel across your browser window.
 - Collapsible into an unobtrusive floating pill badge via the header button or keyboard shortcut (<kbd>Alt</kbd> + <kbd>V</kbd>).
-- Automatically remembers its screen position and minimize state across browser reloads.
+- Starts automatically in minimized pill mode on page load to keep the p5.js canvas and editor completely unobstructed.
+- Automatically remembers its custom screen position when expanded.
 
 ---
 
@@ -66,7 +67,7 @@ To guarantee complete code integrity, p5.js Vibe Coder instructs Gemini to alway
 
 #### Built-in Truncation Safeguards:
 1. **Truncation Detection**: The extension monitors the Gemini response payload for `finishReason === 'MAX_TOKENS'`.
-2. **Auto-Play Protection**: Incomplete code is prevented from running automatically to keep the p5 canvas from crashing.
+2. **Auto-Start Protection**: Incomplete code is prevented from running automatically to keep the p5 canvas from crashing.
 3. **Fence Sanitization**: Cleans up unclosed markdown code fences (````) so broken markup does not corrupt the CodeMirror editor.
 4. **Instant Rollback**: Displays a prominent warning toast prompting you to use `↩ Undo` to restore your last working code version.
 5. **Token Efficiency Instructions**: System prompts explicitly instruct the AI to write clean, concise, token-efficient code without redundant comments when dealing with large sketches.
