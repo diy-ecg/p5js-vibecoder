@@ -207,9 +207,10 @@
   // 1. Inject Page Bridge
   function injectBridge() {
     try {
+      if (document.getElementById('p5-vibe-bridge-script')) return;
       const script = document.createElement('script');
+      script.id = 'p5-vibe-bridge-script';
       script.src = browser.runtime.getURL('content/page-bridge.js');
-      script.onload = () => script.remove();
       (document.head || document.documentElement).appendChild(script);
     } catch (e) {
       console.warn('[p5-vibe] Bridge script injection note:', e);
@@ -512,6 +513,7 @@ REGELN:
   });
 
   function sendBridgeAction(action, payload = {}) {
+    injectBridge();
     return new Promise((resolve) => {
       const requestId = 'req_' + Math.random().toString(36).substring(2, 9);
       
@@ -519,11 +521,9 @@ REGELN:
       const timeoutId = setTimeout(() => {
         if (pendingRequests.has(requestId)) {
           pendingRequests.delete(requestId);
-          // Fallback to Firefox wrappedJSObject
-          const fallbackResult = handleWrappedJSObjectFallback(action, payload.code);
-          resolve(fallbackResult);
+          resolve({ success: false, error: 'Bridge request timeout' });
         }
-      }, 500);
+      }, 1500);
 
       pendingRequests.set(requestId, {
         resolve: (result) => {
@@ -555,13 +555,17 @@ REGELN:
     for (const el of targets) {
       const candidates = [
         el.cmView?.view,
+        el.cmView,
         el.cmTile?.view,
         el.editorView,
         el.view,
+        el.editor,
         el.wrappedJSObject?.cmView?.view,
+        el.wrappedJSObject?.cmView,
         el.wrappedJSObject?.cmTile?.view,
         el.wrappedJSObject?.editorView,
-        el.wrappedJSObject?.view
+        el.wrappedJSObject?.view,
+        el.wrappedJSObject?.editor
       ];
       for (const v of candidates) {
         if (v && typeof v.dispatch === 'function' && v.state?.doc) {
@@ -590,53 +594,57 @@ REGELN:
    * Read the active code from the p5.js editor
    */
   async function getEditorCode() {
-    // 1. Try CodeMirror 6 View
+    // 1. Try direct CodeMirror 6 View (Firefox wrappedJSObject)
     const view = findCM6View();
     if (view && view.state?.doc) {
       try {
-        return view.state.doc.toString();
+        const code = view.state.doc.toString();
+        if (code && code.trim().length > 0) return code;
       } catch (e) {}
     }
 
-    // 2. Try CodeMirror 6 Content DOM node text
-    const cmContent = document.querySelector('.cm-content') || document.querySelector('.cm-editor .cm-content');
-    if (cmContent && cmContent.innerText && cmContent.innerText.trim().length > 0) {
-      return cmContent.innerText;
-    }
+    // 2. Try Page Bridge (Primary for Chrome / Chromium - retrieves full virtualized doc via CM6 API)
+    try {
+      const res = await sendBridgeAction('GET_CODE');
+      if (res && res.success && typeof res.code === 'string' && res.code.trim().length > 0) {
+        return res.code;
+      }
+    } catch (e) {}
 
-    // 3. Try CodeMirror 5
+    // 3. Try CodeMirror 5 (.CodeMirror)
     const cm5El = document.querySelector('.CodeMirror');
     if (cm5El) {
       const cm = cm5El.CodeMirror || cm5El.wrappedJSObject?.CodeMirror;
       if (cm && typeof cm.getValue === 'function') {
         try {
-          return cm.getValue();
+          const code = cm.getValue();
+          if (code && code.trim().length > 0) return code;
         } catch (e) {}
       }
     }
 
-    // 4. Try Textarea
+    // 4. Try Textarea fallback
     const textarea = document.querySelector('textarea.editor, .editor textarea, textarea');
-    if (textarea && textarea.value) {
+    if (textarea && textarea.value && textarea.value.trim().length > 0) {
       return textarea.value;
     }
 
-    // 5. Try bridge message
-    try {
-      const res = await sendBridgeAction('GET_CODE');
-      if (res && res.success && res.code) return res.code;
-    } catch (e) {}
+    // 5. Emergency DOM fallback: CodeMirror 6 Content DOM node text
+    const cmContent = document.querySelector('.cm-content') || document.querySelector('.cm-editor .cm-content');
+    if (cmContent && cmContent.innerText && cmContent.innerText.trim().length > 0) {
+      return cmContent.innerText;
+    }
 
     return '';
   }
 
   /**
-   * Set new code into the p5.js editor
+   * Set new code into the p5.js editor (100% clean replacement, no duplicates)
    */
   async function setEditorCode(newCode) {
     if (!newCode) return false;
 
-    // 1. Try CodeMirror 6 View Transaction (Official CM6 API)
+    // 1. Try direct CodeMirror 6 View Transaction (Firefox wrappedJSObject)
     const view = findCM6View();
     if (view && typeof view.dispatch === 'function' && view.state?.doc) {
       try {
@@ -647,11 +655,22 @@ REGELN:
         if (typeof view.focus === 'function') view.focus();
         return true;
       } catch (err) {
-        console.warn('[p5-vibe] view.dispatch failed:', err);
+        console.warn('[p5-vibe] direct view.dispatch note:', err);
       }
     }
 
-    // 2. Try CodeMirror 5 (.CodeMirror)
+    // 2. Try Page Bridge (Primary for Chrome / Chromium - atomic replace from 0 to doc.length)
+    try {
+      const bridgeRes = await sendBridgeAction('SET_CODE', { code: newCode });
+      if (bridgeRes && bridgeRes.success) {
+        console.log('[p5-vibe] Successfully replaced editor code via Page Bridge');
+        return true;
+      }
+    } catch (e) {
+      console.warn('[p5-vibe] Page bridge SET_CODE failed:', e);
+    }
+
+    // 3. Try CodeMirror 5 (.CodeMirror)
     const cm5El = document.querySelector('.CodeMirror');
     if (cm5El) {
       const cm = cm5El.CodeMirror || cm5El.wrappedJSObject?.CodeMirror;
@@ -666,57 +685,26 @@ REGELN:
       }
     }
 
-    // 3. Try CodeMirror 6 contenteditable DOM injection via Selection + execCommand / Paste
-    const cmContent = document.querySelector('.cm-content') || document.querySelector('.cm-editor .cm-content');
-    if (cmContent) {
-      try {
-        cmContent.focus();
-
-        // Select all text
-        const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(cmContent);
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        // Execute execCommand insertText
-        document.execCommand('selectAll', false, null);
-        const execSuccess = document.execCommand('insertText', false, newCode);
-
-        // Try Paste event as backup
-        if (!execSuccess || !cmContent.textContent.includes('function')) {
-          try {
-            const dt = new DataTransfer();
-            dt.setData('text/plain', newCode);
-            const pasteEvent = new ClipboardEvent('paste', {
-              bubbles: true,
-              cancelable: true,
-              clipboardData: dt
-            });
-            cmContent.dispatchEvent(pasteEvent);
-          } catch (e) {}
-        }
-
-        // Return true if injected
-        return true;
-      } catch (err) {
-        console.warn('[p5-vibe] contenteditable injection failed:', err);
-      }
-    }
-
-    // 4. Try Page Bridge
-    try {
-      const bridgeRes = await sendBridgeAction('SET_CODE', { code: newCode });
-      if (bridgeRes && bridgeRes.success) return true;
-    } catch (e) {}
-
-    // 5. Try Textarea fallback
+    // 4. Try Textarea fallback
     const textarea = document.querySelector('textarea.editor, .editor textarea, textarea');
     if (textarea && textarea.offsetParent !== null) {
       textarea.value = newCode;
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
       textarea.dispatchEvent(new Event('change', { bubbles: true }));
       return true;
+    }
+
+    // 5. Emergency DOM fallback (only if both direct view and bridge are unavailable)
+    const cmContent = document.querySelector('.cm-content') || document.querySelector('.cm-editor .cm-content');
+    if (cmContent) {
+      try {
+        cmContent.focus();
+        document.execCommand('selectAll', false, null);
+        document.execCommand('delete', false, null);
+        return document.execCommand('insertText', false, newCode);
+      } catch (err) {
+        console.warn('[p5-vibe] Emergency contenteditable fallback failed:', err);
+      }
     }
 
     return false;

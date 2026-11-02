@@ -22,9 +22,11 @@
     for (const el of cm6Targets) {
       const candidates = [
         el.cmView?.view,
+        el.cmView,
         el.cmTile?.view,
         el.editorView,
-        el.view
+        el.view,
+        el.editor
       ];
       for (const view of candidates) {
         if (view && typeof view.dispatch === 'function' && view.state?.doc) {
@@ -42,6 +44,29 @@
             }
             if (val.view && typeof val.view.dispatch === 'function' && val.view.state?.doc) {
               return { type: 'cm6', instance: val.view, element: el };
+            }
+          }
+        }
+      } catch (e) {}
+
+      // Check React Fiber on container
+      try {
+        for (const k of Object.keys(el)) {
+          if (k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$')) {
+            let curr = el[k];
+            let depth = 0;
+            while (curr && depth < 12) {
+              const memo = curr.memoizedProps || curr.pendingProps;
+              if (memo) {
+                const cands = [memo.view, memo.editor, memo.editorView, memo.cm];
+                for (const c of cands) {
+                  if (c && typeof c.dispatch === 'function' && c.state?.doc) {
+                    return { type: 'cm6', instance: c, element: el };
+                  }
+                }
+              }
+              curr = curr.return;
+              depth++;
             }
           }
         }
@@ -94,6 +119,16 @@
   function setCode(newCode) {
     const editor = findEditor();
     if (!editor) {
+      console.warn('[p5-vibe-bridge] findEditor returned null, trying emergency fallback');
+      const cmContent = document.querySelector('.cm-content');
+      if (cmContent) {
+        try {
+          cmContent.focus();
+          document.execCommand('selectAll', false, null);
+          document.execCommand('delete', false, null);
+          return document.execCommand('insertText', false, newCode);
+        } catch (e) {}
+      }
       console.error('[p5-vibe-bridge] No editor instance found to update code');
       return false;
     }
