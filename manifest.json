@@ -32,6 +32,7 @@
         "https://editor.p5js.org/*"
       ],
       "js": [
+        "lib/ai-transformer.js",
         "content/content.js"
       ],
       "css": [

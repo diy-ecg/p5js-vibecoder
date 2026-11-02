@@ -217,30 +217,11 @@
     }
   }
 
-  // 2. Direct Gemini API Request with ModelService.ListModels Discovery & Exponential Backoff
-  function cleanGeneratedCode(rawText) {
-    if (!rawText) return '';
-    let text = rawText.trim();
-    const codeBlockRegex = /^```(?:javascript|js|p5|p5js)?\s*\n([\s\S]*?)\n```$/i;
-    const match = text.match(codeBlockRegex);
-    if (match) return match[1].trim();
+  // 2. Direct AI API Request (OpenAI-compatible) with ModelService Discovery & Exponential Backoff
+  const transformer = window.__p5VibeAiTransformer;
 
-    const firstFence = text.indexOf('```');
-    if (firstFence !== -1) {
-      const afterFirst = text.slice(firstFence);
-      const lineEnd = afterFirst.indexOf('\n');
-      if (lineEnd !== -1) {
-        const codePart = afterFirst.slice(lineEnd + 1);
-        const closingFence = codePart.lastIndexOf('```');
-        if (closingFence !== -1) {
-          return codePart.slice(0, closingFence).trim();
-        } else {
-          // Output was cut off before closing fence was written
-          return codePart.trim();
-        }
-      }
-    }
-    return text;
+  function cleanGeneratedCode(rawText) {
+    return transformer ? transformer.cleanGeneratedCode(rawText) : (rawText || '').trim();
   }
 
   /**
@@ -282,80 +263,34 @@
   }
 
   async function callSingleGeminiModel({ prompt, currentCode, apiKey, model, chatSession }) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
-    let userInstruction = '';
-    const hasHistory = chatSession && chatSession.length > 0;
-    const hasExistingCode = currentCode && currentCode.trim().length > 30;
-    const isEn = (config.lang === 'en');
+    const { messages, userInstruction } = transformer.buildOpenAiMessages({
+      prompt,
+      currentCode,
+      chatSession,
+      lang: config.lang
+    });
 
-    if (hasHistory) {
-      userInstruction = isEn
-        ? `Follow-up instruction in running chat: "${prompt}"\n\nCurrent code in web editor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nPlease adapt the code based on the previous conversation and this instruction. Return the complete updated p5.js code.`
-        : `Folge-Anweisung im laufenden Chat: "${prompt}"\n\nAktueller Code im Webeditor:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nBitte passe den Code basierend auf dem bisherigen Chat-Verlauf und dieser Anweisung an. Gib den vollständigen p5.js Code zurück.`;
-    } else if (hasExistingCode) {
-      userInstruction = isEn
-        ? `Here is the current p5.js sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nModify or extend the sketch based on the following request:\n"${prompt}"\n\nReturn the complete, revised JavaScript code containing all functions (setup, draw etc.).`
-        : `Hier ist der aktuelle p5.js Sketch:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nÄndere oder erweitere den Sketch basierend auf folgendem Wunsch:\n"${prompt}"\n\nGib den vollständigen, überarbeiteten JavaScript-Code zurück, der alle Funktionen enthält (setup, draw etc.).`;
-    } else {
-      userInstruction = isEn
-        ? `Create a new, complete p5.js sketch based on the following idea:\n\n"${prompt}"\n\nReturn the complete JavaScript code.`
-        : `Erstelle einen neuen, vollständigen p5.js Sketch basierend auf folgender Idee:\n\n"${prompt}"\n\nGib den vollständigen JavaScript-Code zurück.`;
-    }
-
-    const currentTurn = {
-      role: 'user',
-      parts: [{ text: userInstruction }]
-    };
-
-    const contents = [...(chatSession || []), currentTurn];
-
-    const systemPromptText = isEn
-      ? `You are a brilliant Creative Coder and p5.js specialist in an interactive chat.
-Your task is to generate high-quality, aesthetic and bug-free p5.js code (JavaScript) for the p5.js web editor.
-
-RULES:
-1. Return EXCLUSIVELY executable JavaScript code for the p5.js web editor.
-2. No explanations before or after the code, no markdown commentary outside fences, no polite phrases.
-3. Code MUST include standard p5.js functions like setup() and draw() (if animated/interactive).
-4. Ensure smooth 60 FPS performance and proper canvas initialization (e.g. createCanvas(400, 400) or windowWidth/windowHeight as appropriate).
-5. Use beautiful colors, clever math (sin, cos, noise, lerp) or interactive elements (mouseX, mouseY, keys) when appropriate for the prompt.
-6. Consider previous conversation messages and seamlessly build upon them.
-7. For large sketches, write clean and token-efficient code without redundant verbose comments to stay safely within output token limits.`
-      : `Du bist ein brillanter Creative Coder und p5.js Spezialist in einem interaktiven Chat.
-Deine Aufgabe ist es, hochwertigen, ästhetischen und fehlerfreien p5.js Code (JavaScript) für den p5.js Web-Editor zu generieren.
-
-REGELN:
-1. Gib AUSSCHLIESSLICH den ausführbaren JavaScript-Code für den p5.js Webeditor zurück.
-2. Keine Erklärungen vor oder nach dem Code, kein Begleittext, keine Höflichkeitsfloskeln.
-3. Der Code MUSS standardmäßige p5.js Methoden enthalten wie setup() und draw() (sofern animiert/interaktiv).
-4. Sorge für flüssige 60 FPS Performance und saubere Canvas-Initialisierung (z.B. createCanvas(400, 400) oder windowWidth/windowHeight falls passend).
-5. Nutze schöne Farben, clevere mathematische Formeln (sin, cos, noise, lerp) oder interaktive Elemente (mouseX, mouseY, Tasten), wenn es zum Prompt passt.
-6. Berücksichtige die bisherige Unterhaltung und baue nahtlos auf vorherigen Anweisungen auf.
-7. Schreibe bei umfangreichen Sketchen sauberen und token-effizienten Code ohne überflüssige redundante Kommentare, um das Token-Limit nicht zu überschreiten.`;
-
-    const requestBody = {
-      contents: contents,
-      systemInstruction: {
-        parts: [{
-          text: systemPromptText
-        }]
-      },
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 8192
-      }
-    };
+    const requestBody = transformer.buildOpenAiRequestBody({
+      model,
+      messages,
+      temperature: 0.7,
+      maxTokens: 8192
+    });
 
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey.trim()}`
+      },
       body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
     if (!response.ok) {
-      const errorMsg = data?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+      const errorMsg = transformer.parseApiError(response.status, data);
       return {
         success: false,
         error: errorMsg,
@@ -363,23 +298,20 @@ REGELN:
       };
     }
 
-    const candidate = data.candidates?.[0];
-    if (!candidate || !candidate.content?.parts?.[0]?.text) {
-      return { success: false, error: t('noResponseError') };
+    const parsed = transformer.parseOpenAiResponse(data);
+    if (!parsed.success || !parsed.code) {
+      return { success: false, error: parsed.error || t('noResponseError') };
     }
 
-    const rawCode = candidate.content.parts[0].text;
-    const finalCode = cleanGeneratedCode(rawCode);
-    const isTruncated = candidate.finishReason === 'MAX_TOKENS';
-    if (isTruncated) {
-      console.warn('[p5-vibe] Gemini response hit maxOutputTokens (8192) and was truncated by the API!');
+    if (parsed.isTruncated) {
+      console.warn('[p5-vibe] Gemini response hit max_tokens (8192) and was truncated by the API!');
     }
 
     return {
       success: true,
-      code: finalCode,
+      code: parsed.code,
       userInstruction: userInstruction,
-      isTruncated
+      isTruncated: parsed.isTruncated
     };
   }
 
@@ -1732,10 +1664,10 @@ REGELN:
             updateModelBadge(response.modelUsed);
           }
 
-          // Record conversational turn in chatSession for multi-turn chat
+          // Record conversational turn in chatSession for multi-turn chat (standard OpenAI format)
           chatSession.push(
-            { role: 'user', parts: [{ text: response.userInstruction || prompt }] },
-            { role: 'model', parts: [{ text: `\`\`\`javascript\n${response.code}\n\`\`\`` }] }
+            { role: 'user', content: response.userInstruction || prompt },
+            { role: 'assistant', content: `\`\`\`javascript\n${response.code}\n\`\`\`` }
           );
           // Keep chat context bounded to last 10 messages (5 exchanges)
           if (chatSession.length > 10) {
