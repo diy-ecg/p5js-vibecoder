@@ -264,6 +264,139 @@
     return true;
   }
 
+  // --- Error Interception & Detection ---
+  let lastDetectedError = null;
+
+  function cleanErrorString(raw) {
+    if (!raw) return '';
+    return String(raw)
+      .replace(/^[\s\u200B\uFEFF]+|[\s\u200B\uFEFF]+$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Search the p5.js Web Editor console DOM and lint markers for errors
+   */
+  function findConsoleErrorInDom() {
+    try {
+      // 1. Explicit error elements from console-feed / p5 console
+      const errorElements = document.querySelectorAll(
+        '[class*="console" i] [class*="error" i], ' +
+        '[class*="preview-console" i] [class*="error" i], ' +
+        '[data-method="error"], ' +
+        '[class*="message--error"], ' +
+        '[class*="log--error"], ' +
+        '[role="log"] [class*="error" i]'
+      );
+
+      if (errorElements && errorElements.length > 0) {
+        for (let i = errorElements.length - 1; i >= 0; i--) {
+          const el = errorElements[i];
+          const text = cleanErrorString(el.innerText || el.textContent);
+          if (text && text.length > 3 && !text.includes('p5-vibe')) {
+            return text;
+          }
+        }
+      }
+
+      // 2. Scan all console containers line-by-line for error patterns
+      const consoleContainers = document.querySelectorAll(
+        '[class*="preview-console" i], [class*="console" i], [role="log"]'
+      );
+      for (const container of consoleContainers) {
+        const lines = (container.innerText || container.textContent || '').split('\n');
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const line = cleanErrorString(lines[i]);
+          if (!line) continue;
+          if (
+            line.includes('🌸 p5.js says:') ||
+            /^(?:Uncaught\s+)?(?:ReferenceError|TypeError|SyntaxError|RangeError):/i.test(line) ||
+            /\b(?:Error|is not defined|Cannot read propert)\b/i.test(line)
+          ) {
+            return line;
+          }
+        }
+      }
+
+      // 3. Check CodeMirror lint error markers
+      const lintMarkers = document.querySelectorAll(
+        '.cm-lint-marker-error, .cm-lintRange-error, .CodeMirror-lint-marker-error'
+      );
+      if (lintMarkers && lintMarkers.length > 0) {
+        for (let i = lintMarkers.length - 1; i >= 0; i--) {
+          const marker = lintMarkers[i];
+          const tooltip = marker.getAttribute('title') || marker.getAttribute('aria-label') || marker.textContent;
+          if (tooltip && tooltip.trim()) {
+            return `Syntax error: ${cleanErrorString(tooltip)}`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[p5-vibe-bridge] Error scanning DOM for console errors:', e);
+    }
+    return null;
+  }
+
+  function recordDetectedError(msg) {
+    const cleaned = cleanErrorString(msg);
+    if (!cleaned || cleaned.includes('p5-vibe')) return;
+
+    lastDetectedError = {
+      text: cleaned,
+      time: Date.now()
+    };
+
+    // Broadcast to content script
+    window.postMessage({
+      source: 'p5-vibe-bridge',
+      action: 'ERROR_DETECTED',
+      error: cleaned
+    }, '*');
+  }
+
+  // Intercept global runtime errors
+  window.addEventListener('error', (event) => {
+    if (event && event.message && !event.message.includes('p5-vibe')) {
+      const lineInfo = event.lineno ? ` (line ${event.lineno})` : '';
+      recordDetectedError(`${event.message}${lineInfo}`);
+    }
+  });
+
+  // Intercept postMessage traffic from sketch preview iframe
+  window.addEventListener('message', (event) => {
+    if (!event.data) return;
+    // Skip our own bridge messages
+    if (event.data.target === 'p5-vibe-bridge' || event.data.source === 'p5-vibe-bridge') {
+      return;
+    }
+
+    try {
+      const data = event.data;
+      if (data.source === 'sketch' || data.type === 'error' || data.method === 'error' || data.error) {
+        let msg = '';
+        if (typeof data.error === 'string') {
+          msg = data.error;
+        } else if (data.error && typeof data.error === 'object') {
+          msg = data.error.message || data.error.name || String(data.error);
+          if (data.error.lineNumber || data.error.line) {
+            msg += ` (line ${data.error.lineNumber || data.error.line})`;
+          }
+        } else if (typeof data.message === 'string' && (data.method === 'error' || data.type === 'error')) {
+          msg = data.message;
+        } else if (Array.isArray(data.args) && (data.method === 'error' || data.type === 'error')) {
+          msg = data.args.map(a => typeof a === 'object' ? (a.message || JSON.stringify(a)) : String(a)).join(' ');
+        } else if (Array.isArray(data.data) && (data.method === 'error' || data.type === 'error')) {
+          msg = data.data.map(a => typeof a === 'object' ? (a.message || JSON.stringify(a)) : String(a)).join(' ');
+        }
+
+        if (msg && msg.trim()) {
+          recordDetectedError(msg);
+        }
+      }
+    } catch (e) {}
+  });
+
   // Handle messages from the extension content script
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data || event.data.target !== 'p5-vibe-bridge') {
@@ -288,11 +421,28 @@
         success: ok
       }, '*');
     } else if (action === 'PLAY_SKETCH') {
+      // Clear previous error on play
+      lastDetectedError = null;
       const ok = triggerPlayInPage();
       window.postMessage({
         source: 'p5-vibe-bridge',
         requestId: requestId,
         success: ok
+      }, '*');
+    } else if (action === 'GET_LAST_ERROR') {
+      const err = lastDetectedError ? lastDetectedError.text : findConsoleErrorInDom();
+      window.postMessage({
+        source: 'p5-vibe-bridge',
+        requestId: requestId,
+        success: !!err,
+        error: err || null
+      }, '*');
+    } else if (action === 'CLEAR_ERROR') {
+      lastDetectedError = null;
+      window.postMessage({
+        source: 'p5-vibe-bridge',
+        requestId: requestId,
+        success: true
       }, '*');
     } else if (action === 'PING') {
       const editor = findEditor();

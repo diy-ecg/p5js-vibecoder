@@ -83,7 +83,15 @@
       modelInfoError: 'Konnte keine Modelle abrufen (Key prüfen).',
       invalidKeyError: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key in den Einstellungen.',
       noResponseError: 'Keine Antwort von Gemini erhalten.',
-      statusTruncatedWarning: '⚠️ Warnung: Das Skript hat das Token-Ausgabelimit von Gemini (8.192 Tokens) erreicht und wurde abgeschnitten! Nutze ↩ Undo.'
+      statusTruncatedWarning: '⚠️ Warnung: Das Skript hat das Token-Ausgabelimit von Gemini (8.192 Tokens) erreicht und wurde abgeschnitten! Nutze ↩ Undo.',
+      fixErrorBtn: 'Fehler einfügen',
+      fixErrorBtnTitle: 'Kopiert den letzten Konsolenfehler in das Promptfeld',
+      errorBadge: 'Fehler in Konsole',
+      btnInsertError: 'In Prompt einfügen',
+      dismissErrorTitle: 'Fehlerhinweis schließen',
+      errorCopiedToast: '✅ Fehlermeldung in Prompt übernommen! Drücke Strg+Enter zum Beheben.',
+      noErrorDetectedToast: 'Kein Fehler in der Konsole gefunden.',
+      errorPromptPrefix: (msg) => `Behebe folgenden p5.js-Fehler:\n${msg}`
     },
     en: {
       panelTitle: 'p5.js Vibe Coder',
@@ -139,7 +147,15 @@
       modelInfoError: 'Could not fetch models (check key).',
       invalidKeyError: 'Invalid Gemini API key. Please check your key in settings.',
       noResponseError: 'No response received from Gemini.',
-      statusTruncatedWarning: '⚠️ Warning: The script reached Gemini\'s output token limit (8,192 tokens) and was truncated! Use ↩ Undo.'
+      statusTruncatedWarning: '⚠️ Warning: The script reached Gemini\'s output token limit (8,192 tokens) and was truncated! Use ↩ Undo.',
+      fixErrorBtn: 'Insert Error',
+      fixErrorBtnTitle: 'Copies the latest console error into the prompt field',
+      errorBadge: 'Console Error',
+      btnInsertError: 'Insert into Prompt',
+      dismissErrorTitle: 'Dismiss error banner',
+      errorCopiedToast: '✅ Error copied to prompt! Press Ctrl+Enter to fix.',
+      noErrorDetectedToast: 'No error detected in console.',
+      errorPromptPrefix: (msg) => `Fix the following p5.js error:\n${msg}`
     }
   };
 
@@ -479,11 +495,19 @@ REGELN:
     if (event.source !== window || !event.data || event.data.source !== 'p5-vibe-bridge') {
       return;
     }
-    const { requestId, code, success } = event.data;
+    const { requestId, code, success, action, error } = event.data;
     if (requestId && pendingRequests.has(requestId)) {
       const { resolve } = pendingRequests.get(requestId);
       pendingRequests.delete(requestId);
-      resolve({ success, code });
+      resolve({ success, code, error });
+      return;
+    }
+
+    // Proactive error event pushed from sketch preview iframe
+    if (action === 'ERROR_DETECTED' && error) {
+      if (typeof window.__p5VibeHandleDetectedError === 'function') {
+        window.__p5VibeHandleDetectedError(error);
+      }
     }
   });
 
@@ -902,9 +926,92 @@ REGELN:
         console.warn('[p5-vibe] Play button not located directly, using shortcut fallback');
       }
       dispatchPlayShortcut();
+
+      // Check for console/runtime errors shortly after sketch runs
+      setTimeout(() => {
+        if (typeof window.__p5VibeCheckErrors === 'function') {
+          window.__p5VibeCheckErrors();
+        }
+      }, 900);
+      setTimeout(() => {
+        if (typeof window.__p5VibeCheckErrors === 'function') {
+          window.__p5VibeCheckErrors();
+        }
+      }, 2200);
     }
 
     return true;
+  }
+
+  /**
+   * Search the p5.js Web Editor console DOM and lint markers for errors
+   */
+  function findConsoleErrorInDom() {
+    function cleanErr(raw) {
+      if (!raw) return '';
+      return String(raw)
+        .replace(/^[\s\u200B\uFEFF]+|[\s\u200B\uFEFF]+$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    try {
+      // 1. Explicit error elements from console-feed / p5 console
+      const errorElements = document.querySelectorAll(
+        '[class*="console" i] [class*="error" i], ' +
+        '[class*="preview-console" i] [class*="error" i], ' +
+        '[data-method="error"], ' +
+        '[class*="message--error"], ' +
+        '[class*="log--error"], ' +
+        '[role="log"] [class*="error" i]'
+      );
+
+      if (errorElements && errorElements.length > 0) {
+        for (let i = errorElements.length - 1; i >= 0; i--) {
+          const el = errorElements[i];
+          const text = cleanErr(el.innerText || el.textContent);
+          if (text && text.length > 3 && !text.includes('p5-vibe')) {
+            return text;
+          }
+        }
+      }
+
+      // 2. Scan all console containers line-by-line for error patterns
+      const consoleContainers = document.querySelectorAll(
+        '[class*="preview-console" i], [class*="console" i], [role="log"]'
+      );
+      for (const container of consoleContainers) {
+        const lines = (container.innerText || container.textContent || '').split('\n');
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const line = cleanErr(lines[i]);
+          if (!line) continue;
+          if (
+            line.includes('🌸 p5.js says:') ||
+            /^(?:Uncaught\s+)?(?:ReferenceError|TypeError|SyntaxError|RangeError):/i.test(line) ||
+            /\b(?:Error|is not defined|Cannot read propert)\b/i.test(line)
+          ) {
+            return line;
+          }
+        }
+      }
+
+      // 3. Check CodeMirror lint error markers
+      const lintMarkers = document.querySelectorAll(
+        '.cm-lint-marker-error, .cm-lintRange-error, .CodeMirror-lint-marker-error'
+      );
+      if (lintMarkers && lintMarkers.length > 0) {
+        for (let i = lintMarkers.length - 1; i >= 0; i--) {
+          const marker = lintMarkers[i];
+          const tooltip = marker.getAttribute('title') || marker.getAttribute('aria-label') || marker.textContent;
+          if (tooltip && tooltip.trim()) {
+            return `Syntax error: ${cleanErr(tooltip)}`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[p5-vibe] Error scanning DOM for console errors:', e);
+    }
+    return null;
   }
 
   // 3. UI Construction
@@ -967,12 +1074,15 @@ REGELN:
           </div>
         </div>
 
-        <!-- Prompt Header with Chat Indicator, Auto-Play Switch and History Button -->
+        <!-- Prompt Header with Chat Indicator, Auto-Play Switch, Error Insert and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
             <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="${t('chatIndicatorNewTitle')}">${t('chatIndicatorNew')}</span>
           </div>
           <div class="p5-vibe-prompt-tools">
+            <button type="button" class="p5-vibe-btn-fix-error" id="p5-vibe-btn-fix-error" title="${t('fixErrorBtnTitle')}">
+              🐛 <span id="p5-vibe-btn-fix-error-text">${t('fixErrorBtn')}</span>
+            </button>
             <label class="p5-vibe-switch" title="${t('autoPlayTitle')}">
               <input type="checkbox" id="p5-vibe-autorun-toggle" checked />
               <span class="p5-vibe-switch-slider"></span>
@@ -991,6 +1101,20 @@ REGELN:
             <button type="button" class="p5-vibe-btn-clear-history" id="p5-vibe-btn-clear-history">${t('historyClear')}</button>
           </div>
           <div class="p5-vibe-history-list" id="p5-vibe-history-list"></div>
+        </div>
+
+        <!-- Detected Console Error Banner (appears when an error is captured) -->
+        <div class="p5-vibe-error-banner" id="p5-vibe-error-banner" style="display: none;">
+          <div class="p5-vibe-error-header">
+            <span class="p5-vibe-error-badge" id="p5-vibe-error-badge">⚠️ ${t('errorBadge')}</span>
+            <button type="button" class="p5-vibe-btn-error-dismiss" id="p5-vibe-btn-error-dismiss" title="${t('dismissErrorTitle')}">×</button>
+          </div>
+          <div class="p5-vibe-error-text" id="p5-vibe-error-text"></div>
+          <div class="p5-vibe-error-actions">
+            <button type="button" class="p5-vibe-btn-error-insert" id="p5-vibe-btn-error-insert" title="${t('fixErrorBtnTitle')}">
+              📋 <span id="p5-vibe-btn-error-insert-text">${t('btnInsertError')}</span>
+            </button>
+          </div>
         </div>
 
         <!-- Prompt Input -->
@@ -1049,9 +1173,88 @@ REGELN:
     const btnRefreshModels = panel.querySelector('#p5-vibe-btn-refresh-models');
     const modelInfo = panel.querySelector('#p5-vibe-model-info');
     const autoRunToggle = panel.querySelector('#p5-vibe-autorun-toggle');
+    const btnFixError = panel.querySelector('#p5-vibe-btn-fix-error');
+    const btnFixErrorText = panel.querySelector('#p5-vibe-btn-fix-error-text');
+    const errorBanner = panel.querySelector('#p5-vibe-error-banner');
+    const errorTextEl = panel.querySelector('#p5-vibe-error-text');
+    const errorBadge = panel.querySelector('#p5-vibe-error-badge');
+    const btnErrorInsert = panel.querySelector('#p5-vibe-btn-error-insert');
+    const btnErrorInsertText = panel.querySelector('#p5-vibe-btn-error-insert-text');
+    const btnErrorDismiss = panel.querySelector('#p5-vibe-btn-error-dismiss');
 
     let historyNavIndex = -1;
     let draftPrompt = '';
+    let currentErrorText = null;
+
+    function showConsoleError(errorText) {
+      if (!errorText || !errorText.trim()) return;
+      currentErrorText = errorText.trim();
+      if (errorTextEl) errorTextEl.textContent = currentErrorText;
+      if (errorBanner) errorBanner.style.display = 'block';
+      if (btnFixError) btnFixError.classList.add('has-error');
+    }
+
+    function hideConsoleError() {
+      currentErrorText = null;
+      if (errorBanner) errorBanner.style.display = 'none';
+      if (btnFixError) btnFixError.classList.remove('has-error');
+    }
+
+    async function getLatestErrorText() {
+      if (currentErrorText) return currentErrorText;
+      // 1. Query page bridge
+      try {
+        const res = await sendBridgeAction('GET_LAST_ERROR');
+        if (res && res.success && res.error) {
+          return res.error;
+        }
+      } catch (e) {}
+      // 2. Query DOM directly
+      return findConsoleErrorInDom();
+    }
+
+    async function handleInsertErrorClick() {
+      const err = await getLatestErrorText();
+      if (!err) {
+        setStatus(t('noErrorDetectedToast'), 'info');
+        return;
+      }
+
+      const formatted = t('errorPromptPrefix', err);
+      const existing = (promptText.value || '').trim();
+      if (existing && !existing.includes(err)) {
+        promptText.value = `${existing}\n\n${formatted}`;
+      } else {
+        promptText.value = formatted;
+      }
+
+      promptText.focus();
+      promptText.setSelectionRange(promptText.value.length, promptText.value.length);
+      setStatus(t('errorCopiedToast'), 'success');
+      hideConsoleError();
+    }
+
+    if (btnFixError) {
+      btnFixError.addEventListener('click', handleInsertErrorClick);
+    }
+    if (btnErrorInsert) {
+      btnErrorInsert.addEventListener('click', handleInsertErrorClick);
+    }
+    if (btnErrorDismiss) {
+      btnErrorDismiss.addEventListener('click', hideConsoleError);
+    }
+
+    // Connect global hooks for error detection
+    window.__p5VibeHandleDetectedError = (err) => {
+      showConsoleError(err);
+    };
+
+    window.__p5VibeCheckErrors = async () => {
+      const err = await getLatestErrorText();
+      if (err) {
+        showConsoleError(err);
+      }
+    };
 
     // Apply language across UI dynamically
     function applyLanguage(lang) {
@@ -1091,6 +1294,13 @@ REGELN:
       if (switchLabel) switchLabel.title = t('autoPlayTitle');
       const switchText = panel.querySelector('.p5-vibe-switch-text');
       if (switchText) switchText.textContent = t('autoPlayText');
+
+      if (btnFixError) btnFixError.title = t('fixErrorBtnTitle');
+      if (btnFixErrorText) btnFixErrorText.textContent = t('fixErrorBtn');
+      if (errorBadge) errorBadge.textContent = `⚠️ ${t('errorBadge')}`;
+      if (btnErrorInsert) btnErrorInsert.title = t('fixErrorBtnTitle');
+      if (btnErrorInsertText) btnErrorInsertText.textContent = t('btnInsertError');
+      if (btnErrorDismiss) btnErrorDismiss.title = t('dismissErrorTitle');
 
       const historyHeader = panel.querySelector('#p5-vibe-history-header-title');
       if (historyHeader) historyHeader.textContent = t('historyHeader');
@@ -1420,6 +1630,7 @@ REGELN:
     // Undo action
     btnUndo.addEventListener('click', async () => {
       if (codeHistory.length === 0) return;
+      hideConsoleError();
       const prevCode = codeHistory.pop();
       updateUndoButtonState();
 
@@ -1467,6 +1678,7 @@ REGELN:
 
     async function triggerGenerate() {
       if (isGenerating) return;
+      hideConsoleError();
 
       const prompt = promptText.value.trim();
       if (!prompt) {
