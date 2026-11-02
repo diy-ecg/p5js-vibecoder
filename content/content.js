@@ -1129,19 +1129,19 @@ REGELN:
             <span id="p5-vibe-gen-icon">⚡</span>
             <span id="p5-vibe-gen-text">${t('btnGenerate')}</span>
           </button>
-          <div class="p5-vibe-secondary-actions">
-            <button class="p5-vibe-btn-secondary" id="p5-vibe-btn-undo" title="${t('undoTitleEmpty')}" disabled>
-              ${t('btnUndo')}
-            </button>
-            <button type="button" class="p5-vibe-btn-secondary p5-vibe-btn-fix-error" id="p5-vibe-btn-fix-error" title="${t('fixErrorBtnTitle')}">
-              🐛 <span id="p5-vibe-btn-fix-error-text">${t('fixErrorBtn')}</span>
-            </button>
-          </div>
+          <button class="p5-vibe-btn-secondary" id="p5-vibe-btn-undo" title="${t('undoTitleEmpty')}">
+            ${t('btnUndo')}
+          </button>
         </div>
 
-        <!-- Status / Feedback -->
-        <div class="p5-vibe-status" id="p5-vibe-status-msg">
-          ${t('statusReady')}
+        <!-- Status & Tool Row -->
+        <div class="p5-vibe-status-row">
+          <div class="p5-vibe-status" id="p5-vibe-status-msg">
+            ${t('statusReady')}
+          </div>
+          <button type="button" class="p5-vibe-btn-secondary p5-vibe-btn-fix-error" id="p5-vibe-btn-fix-error" title="${t('fixErrorBtnTitle')}">
+            🐛 <span id="p5-vibe-btn-fix-error-text">${t('fixErrorBtn')}</span>
+          </button>
         </div>
       </div>
     `;
@@ -1631,7 +1631,10 @@ REGELN:
 
     // Undo action
     btnUndo.addEventListener('click', async () => {
-      if (codeHistory.length === 0) return;
+      if (codeHistory.length === 0) {
+        setStatus(t('undoTitleEmpty'), 'info');
+        return;
+      }
       hideConsoleError();
       const prevCode = codeHistory.pop();
       updateUndoButtonState();
@@ -1659,7 +1662,8 @@ REGELN:
     });
 
     function updateUndoButtonState() {
-      btnUndo.disabled = codeHistory.length === 0;
+      if (!btnUndo) return;
+      btnUndo.disabled = false;
       btnUndo.title = codeHistory.length > 0 
         ? t('undoTitleCount', codeHistory.length)
         : t('undoTitleEmpty');
