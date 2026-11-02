@@ -1074,15 +1074,12 @@ REGELN:
           </div>
         </div>
 
-        <!-- Prompt Header with Chat Indicator, Auto-Play Switch, Error Insert and History Button -->
+        <!-- Prompt Header with Chat Indicator, Auto-Play Switch and History Button -->
         <div class="p5-vibe-prompt-header">
           <div class="p5-vibe-prompt-label-group">
             <span id="p5-vibe-chat-indicator" class="p5-vibe-chat-pill" title="${t('chatIndicatorNewTitle')}">${t('chatIndicatorNew')}</span>
           </div>
           <div class="p5-vibe-prompt-tools">
-            <button type="button" class="p5-vibe-btn-fix-error" id="p5-vibe-btn-fix-error" title="${t('fixErrorBtnTitle')}">
-              🐛 <span id="p5-vibe-btn-fix-error-text">${t('fixErrorBtn')}</span>
-            </button>
             <label class="p5-vibe-switch" title="${t('autoPlayTitle')}">
               <input type="checkbox" id="p5-vibe-autorun-toggle" checked />
               <span class="p5-vibe-switch-slider"></span>
@@ -1132,9 +1129,14 @@ REGELN:
             <span id="p5-vibe-gen-icon">⚡</span>
             <span id="p5-vibe-gen-text">${t('btnGenerate')}</span>
           </button>
-          <button class="p5-vibe-btn-secondary" id="p5-vibe-btn-undo" title="${t('undoTitleEmpty')}" disabled>
-            ${t('btnUndo')}
-          </button>
+          <div class="p5-vibe-secondary-actions">
+            <button class="p5-vibe-btn-secondary" id="p5-vibe-btn-undo" title="${t('undoTitleEmpty')}" disabled>
+              ${t('btnUndo')}
+            </button>
+            <button type="button" class="p5-vibe-btn-secondary p5-vibe-btn-fix-error" id="p5-vibe-btn-fix-error" title="${t('fixErrorBtnTitle')}">
+              🐛 <span id="p5-vibe-btn-fix-error-text">${t('fixErrorBtn')}</span>
+            </button>
+          </div>
         </div>
 
         <!-- Status / Feedback -->
