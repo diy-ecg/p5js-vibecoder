@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Vibe coding in the p5.js Web Editor with AI (Google Gemini, Mistral, Groq, Ollama)",
   "scripts": {
-    "test": "node --test tests/**/*.test.js"
+    "test": "node --test tests/**/*.test.js",
+    "manifest:chrome": "cp manifest.chrome.json manifest.json",
+    "manifest:firefox": "cp manifest.firefox.json manifest.json"
   },
   "keywords": [
     "p5js",
