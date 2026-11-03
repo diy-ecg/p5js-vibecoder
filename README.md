@@ -5,6 +5,7 @@
 [![Manifest V3](https://img.shields.io/badge/Platform-WebExtension%20(MV3)-blue)](#-installation-guide)
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-4285F4?logo=google)](https://aistudio.google.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Privacy: Clean](https://img.shields.io/badge/Privacy-Strict%20(No%20Tracking)-brightgreen)](PRIVACY.md)
 [![Bilingual](https://img.shields.io/badge/Language-English%20%7C%20Deutsch-blue)](#-bilingual-support-en--de)
 
 A cross-browser extension for **vibe coding** directly inside the official [p5.js Web Editor](https://editor.p5js.org/). Built for equal, first-class performance across **Google Chrome**, **Brave**, **Microsoft Edge**, **Mozilla Firefox**, **Opera**, and other modern browsers.
@@ -152,9 +153,16 @@ p5js-vibecoder/
 │   ├── icon-16.png
 │   ├── icon-48.png
 │   └── icon-128.png
+├── PRIVACY.md            # Privacy policy & data protection declaration
 ├── LICENSE               # MIT License
 └── README.md             # Project documentation
 ```
+
+---
+
+## 🔒 Privacy & Data Protection
+
+p5.js Vibe Coder does **not track**, collect telemetry, or store user prompts on any remote server. Direct API calls are made exclusively between your browser and the Google Gemini API using your personal API key. For full details, see our [Privacy Policy](PRIVACY.md).
 
 ---
 

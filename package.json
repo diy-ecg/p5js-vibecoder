@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test tests/**/*.test.js",
     "manifest:chrome": "cp manifest.chrome.json manifest.json",
-    "manifest:firefox": "cp manifest.firefox.json manifest.json"
+    "manifest:firefox": "cp manifest.firefox.json manifest.json",
+    "build:zip": "rm -f p5js-vibecoder.zip && zip -r p5js-vibecoder.zip manifest.json background.js content icons lib popup -x '*.DS_Store*'"
   },
   "keywords": [
     "p5js",
