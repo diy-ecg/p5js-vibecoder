@@ -33,8 +33,14 @@
       panelTitle: 'p5.js Vibe Coder',
       pillTitle: 'Klicken zum Öffnen des p5.js Vibe Coder Panels (Alt+V)',
       modelBadgeTitle: (m) => `Aktives Modell: ${m}`,
+      btnInfoTitle: 'Informationen & Kontakt (Version, Lizenz)',
+      btnInfoCloseTitle: 'Schließen',
       btnSettingsTitle: 'Einstellungen (API-Key & Sprache)',
       btnMinimizeTitle: 'Minimieren',
+      infoContactLabel: 'Kontakt / Feedback',
+      infoLicenseLabel: 'Lizenz',
+      infoLicenseValue: 'MIT License (Open Source)',
+      infoRepoLabel: 'GitHub Projekt',
       apiKeyLabel: 'Gemini API Key',
       showPassword: 'Passwort anzeigen',
       hidePassword: 'Passwort verbergen',
@@ -97,8 +103,14 @@
       panelTitle: 'p5.js Vibe Coder',
       pillTitle: 'Click to open p5.js Vibe Coder panel (Alt+V)',
       modelBadgeTitle: (m) => `Active model: ${m}`,
+      btnInfoTitle: 'Information & Contact (Version, License)',
+      btnInfoCloseTitle: 'Close',
       btnSettingsTitle: 'Settings (API Key & Language)',
       btnMinimizeTitle: 'Minimize',
+      infoContactLabel: 'Contact / Feedback',
+      infoLicenseLabel: 'License',
+      infoLicenseValue: 'MIT License (Open Source)',
+      infoRepoLabel: 'GitHub Project',
       apiKeyLabel: 'Gemini API Key',
       showPassword: 'Show password',
       hidePassword: 'Hide password',
@@ -948,6 +960,11 @@
     const panel = document.createElement('div');
     panel.id = 'p5-vibe-panel';
     panel.className = 'p5-vibe-hidden';
+
+    const extVersion = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest)
+      ? (chrome.runtime.getManifest()?.version || '1.0.0')
+      : '1.0.0';
+
     panel.innerHTML = `
       <div class="p5-vibe-header" id="p5-vibe-drag-header">
         <div class="p5-vibe-title-group">
@@ -956,12 +973,38 @@
           <span class="p5-vibe-model-tag" id="p5-vibe-model-label">Gemini 2.0 Flash</span>
         </div>
         <div class="p5-vibe-actions">
+          <button class="p5-vibe-icon-btn p5-vibe-btn-info" id="p5-vibe-btn-info" title="${t('btnInfoTitle')}"><i>i</i></button>
           <button class="p5-vibe-icon-btn" id="p5-vibe-btn-settings" title="${t('btnSettingsTitle')}">⚙</button>
           <button class="p5-vibe-icon-btn" id="p5-vibe-btn-minimize" title="${t('btnMinimizeTitle')}">−</button>
         </div>
       </div>
 
       <div class="p5-vibe-body">
+        <!-- Info Drawer -->
+        <div class="p5-vibe-info-drawer" id="p5-vibe-info-drawer">
+          <div class="p5-vibe-info-header">
+            <div class="p5-vibe-info-title-wrap">
+              <span class="p5-vibe-info-title">p5.js Vibe Coder</span>
+              <span class="p5-vibe-info-version">v${extVersion}</span>
+            </div>
+            <button type="button" class="p5-vibe-info-close" id="p5-vibe-btn-info-close" title="${t('btnInfoCloseTitle')}">×</button>
+          </div>
+          <div class="p5-vibe-info-body">
+            <div class="p5-vibe-info-row">
+              <span class="p5-vibe-info-label" id="p5-vibe-label-contact">${t('infoContactLabel')}</span>
+              <a href="mailto:info@diy-ecg.org" class="p5-vibe-info-link">info@diy-ecg.org</a>
+            </div>
+            <div class="p5-vibe-info-row">
+              <span class="p5-vibe-info-label" id="p5-vibe-label-license">${t('infoLicenseLabel')}</span>
+              <span class="p5-vibe-info-val" id="p5-vibe-val-license">${t('infoLicenseValue')}</span>
+            </div>
+            <div class="p5-vibe-info-row">
+              <span class="p5-vibe-info-label" id="p5-vibe-label-repo">${t('infoRepoLabel')}</span>
+              <a href="https://github.com/diy-ecg/p5js-vibecoder" target="_blank" rel="noopener noreferrer" class="p5-vibe-info-link">GitHub Repo ↗</a>
+            </div>
+          </div>
+        </div>
+
         <!-- Settings Drawer -->
         <div class="p5-vibe-settings" id="p5-vibe-settings-drawer">
           <div class="p5-vibe-field">
@@ -1077,6 +1120,9 @@
   // 4. Setup Event Listeners
   function setupEvents(panel, pill) {
     const dragHeader = panel.querySelector('#p5-vibe-drag-header');
+    const btnInfo = panel.querySelector('#p5-vibe-btn-info');
+    const infoDrawer = panel.querySelector('#p5-vibe-info-drawer');
+    const btnInfoClose = panel.querySelector('#p5-vibe-btn-info-close');
     const btnSettings = panel.querySelector('#p5-vibe-btn-settings');
     const settingsDrawer = panel.querySelector('#p5-vibe-settings-drawer');
     const keyInput = panel.querySelector('#p5-vibe-key-input');
@@ -1185,9 +1231,20 @@
       config.lang = lang === 'de' ? 'de' : 'en';
 
       if (pill) pill.title = t('pillTitle');
+      if (btnInfo) btnInfo.title = t('btnInfoTitle');
+      if (btnInfoClose) btnInfoClose.title = t('btnInfoCloseTitle');
       if (btnSettings) btnSettings.title = t('btnSettingsTitle');
       if (btnMinimize) btnMinimize.title = t('btnMinimizeTitle');
       updateModelBadge(config.model);
+
+      const labelContact = panel.querySelector('#p5-vibe-label-contact');
+      if (labelContact) labelContact.textContent = t('infoContactLabel');
+      const labelLicense = panel.querySelector('#p5-vibe-label-license');
+      if (labelLicense) labelLicense.textContent = t('infoLicenseLabel');
+      const valLicense = panel.querySelector('#p5-vibe-val-license');
+      if (valLicense) valLicense.textContent = t('infoLicenseValue');
+      const labelRepo = panel.querySelector('#p5-vibe-label-repo');
+      if (labelRepo) labelRepo.textContent = t('infoRepoLabel');
 
       const labelKey = panel.querySelector('#p5-vibe-label-key');
       if (labelKey) labelKey.textContent = t('apiKeyLabel');
@@ -1301,10 +1358,45 @@
       });
     }
 
+    // Info Drawer Toggle
+    if (btnInfo && infoDrawer) {
+      btnInfo.addEventListener('click', () => {
+        const isOpen = infoDrawer.classList.toggle('open');
+        btnInfo.classList.toggle('active', isOpen);
+        if (isOpen) {
+          if (settingsDrawer) {
+            settingsDrawer.classList.remove('open');
+            if (btnSettings) btnSettings.classList.remove('active');
+          }
+          if (historyDrawer) {
+            historyDrawer.classList.remove('open');
+            if (btnHistory) btnHistory.classList.remove('active');
+          }
+        }
+      });
+    }
+
+    if (btnInfoClose && infoDrawer) {
+      btnInfoClose.addEventListener('click', () => {
+        infoDrawer.classList.remove('open');
+        if (btnInfo) btnInfo.classList.remove('active');
+      });
+    }
+
     // Settings Toggle
     btnSettings.addEventListener('click', () => {
       const isOpen = settingsDrawer.classList.toggle('open');
       btnSettings.classList.toggle('active', isOpen);
+      if (isOpen) {
+        if (infoDrawer) {
+          infoDrawer.classList.remove('open');
+          if (btnInfo) btnInfo.classList.remove('active');
+        }
+        if (historyDrawer) {
+          historyDrawer.classList.remove('open');
+          if (btnHistory) btnHistory.classList.remove('active');
+        }
+      }
     });
 
     // Toggle API Key visibility
@@ -1481,6 +1573,14 @@
       const isOpen = historyDrawer.classList.toggle('open');
       btnHistory.classList.toggle('active', isOpen);
       if (isOpen) {
+        if (infoDrawer) {
+          infoDrawer.classList.remove('open');
+          if (btnInfo) btnInfo.classList.remove('active');
+        }
+        if (settingsDrawer) {
+          settingsDrawer.classList.remove('open');
+          if (btnSettings) btnSettings.classList.remove('active');
+        }
         renderHistoryList();
       }
     });
@@ -1614,6 +1714,10 @@
       }
 
       if (!config.apiKey) {
+        if (infoDrawer) {
+          infoDrawer.classList.remove('open');
+          if (btnInfo) btnInfo.classList.remove('active');
+        }
         settingsDrawer.classList.add('open');
         btnSettings.classList.add('active');
         keyInput.focus();

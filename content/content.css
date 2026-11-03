@@ -157,6 +157,16 @@
   color: #ffffff !important;
 }
 
+#p5-vibe-panel .p5-vibe-btn-info i {
+  font-style: italic;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-block;
+  pointer-events: none;
+}
+
 /* Scrollable Content Body */
 .p5-vibe-body {
   padding: 14px;
@@ -165,6 +175,108 @@
   gap: 12px;
   overflow-y: auto;
   max-height: calc(100vh - 160px);
+}
+
+/* Info Drawer */
+.p5-vibe-info-drawer {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--p5-vibe-surface);
+  border: 1px solid var(--p5-vibe-border);
+  border-radius: 8px;
+  animation: p5-vibe-slide-down 0.2s ease;
+}
+
+.p5-vibe-info-drawer.open {
+  display: flex;
+}
+
+.p5-vibe-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.p5-vibe-info-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.p5-vibe-info-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.p5-vibe-info-version {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(237, 34, 93, 0.2);
+  border: 1px solid rgba(237, 34, 93, 0.35);
+  color: #ff6b8b;
+  padding: 1px 6px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+
+.p5-vibe-info-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.15s ease;
+}
+
+.p5-vibe-info-close:hover {
+  color: #ffffff;
+}
+
+.p5-vibe-info-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.p5-vibe-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.p5-vibe-info-label {
+  color: #94a3b8;
+}
+
+.p5-vibe-info-val {
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+#p5-vibe-panel a.p5-vibe-info-link,
+#p5-vibe-panel a.p5-vibe-info-link:link,
+#p5-vibe-panel a.p5-vibe-info-link:visited,
+.p5-vibe-info-link {
+  color: #38bdf8 !important;
+  text-decoration: underline;
+  text-decoration-color: rgba(56, 189, 248, 0.4);
+  font-size: 11px;
+  transition: all 0.15s ease;
+}
+
+#p5-vibe-panel a.p5-vibe-info-link:hover,
+#p5-vibe-panel a.p5-vibe-info-link:focus,
+.p5-vibe-info-link:hover {
+  color: #7dd3fc !important;
+  text-decoration-color: #7dd3fc;
 }
 
 /* Settings Drawer */
