@@ -1,7 +1,8 @@
 # ⚡ p5.js Vibe Coder (Browser Extension)
 
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Available-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/hepphlodjiibdknhgndjaephkccjigbo)
 [![GitHub](https://img.shields.io/badge/GitHub-diy--ecg%2Fp5js--vibecoder-181717?logo=github)](https://github.com/diy-ecg/p5js-vibecoder)
-[![Browsers](https://img.shields.io/badge/Browsers-Chrome%20%7C%20Brave%20%7C%20Edge%20%7C%20Firefox-success?logo=googlechrome)](https://editor.p5js.org/)
+[![Browsers](https://img.shields.io/badge/Browsers-Chrome%20%7C%20Brave%20%7C%20Edge%20%7C%20Firefox-success?logo=googlechrome)](https://chromewebstore.google.com/detail/hepphlodjiibdknhgndjaephkccjigbo)
 [![Manifest V3](https://img.shields.io/badge/Platform-WebExtension%20(MV3)-blue)](#-installation-guide)
 [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%20API-4285F4?logo=google)](https://aistudio.google.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -91,9 +92,19 @@ To guarantee complete code integrity, p5.js Vibe Coder instructs Gemini to alway
 
 ## 🛠️ Installation Guide
 
+### ⚡ 1-Click Install via Chrome Web Store (Recommended)
+
+Install the extension directly with a single click from the official **Google Chrome Web Store** (compatible with Google Chrome, Brave, Microsoft Edge, Opera, Vivaldi, and Arc):
+
+👉 **[Install p5.js Vibe Coder from Chrome Web Store ↗](https://chromewebstore.google.com/detail/hepphlodjiibdknhgndjaephkccjigbo)**
+
+---
+
+### 💻 Manual Installation from Source (Developer Mode)
+
 The extension is fully open-source and built on the cross-browser Manifest V3 standard. It is natively compatible with both **Chromium-based browsers** and **Mozilla Firefox**.
 
-### 1. Clone or Download
+#### 1. Clone or Download
 ```bash
 git clone https://github.com/diy-ecg/p5js-vibecoder.git
 ```
