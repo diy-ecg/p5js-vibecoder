@@ -164,10 +164,17 @@ p5js-vibecoder/
 │   ├── icon-16.png
 │   ├── icon-48.png
 │   └── icon-128.png
+├── ARCHITECTURE.md       # Complete software architecture & developer guide (German)
 ├── PRIVACY.md            # Privacy policy & data protection declaration
 ├── LICENSE               # MIT License
 └── README.md             # Project documentation
 ```
+
+---
+
+## 🛠️ Developer Documentation
+
+For an in-depth code walkthrough, architecture diagrams, module breakdown, and step-by-step modification guides (how to add models, adjust prompts, or customize UI), see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
