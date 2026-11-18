@@ -53,6 +53,16 @@
         </select>
       </section>
 
+      <section class="form-group">
+        <label for="gemini-tokens" id="popup-label-tokens">Max Output Tokens</label>
+        <select id="gemini-tokens">
+          <option value="8192">8,192 tokens (Default)</option>
+          <option value="16384" selected>16,384 tokens (Recommended)</option>
+          <option value="32768">32,768 tokens (Large sketches)</option>
+          <option value="65536">65,536 tokens (Maximum)</option>
+        </select>
+      </section>
+
       <button id="btn-save" class="btn-primary">Save Settings</button>
 
       <div id="save-msg" class="save-feedback"></div>

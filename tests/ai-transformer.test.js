@@ -106,6 +106,22 @@ describe('AI Transformer (OpenAI Compatibility)', () => {
       assert.strictEqual(body.temperature, 0.5);
       assert.strictEqual(body.max_tokens, 4096);
     });
+
+    it('defaults max_tokens to 16384 and allows up to 65536', () => {
+      const messages = [{ role: 'user', content: 'test' }];
+      const defaultBody = buildOpenAiRequestBody({
+        model: 'gemini-2.0-flash',
+        messages
+      });
+      assert.strictEqual(defaultBody.max_tokens, 16384);
+
+      const highTokenBody = buildOpenAiRequestBody({
+        model: 'gemini-2.0-flash',
+        messages,
+        maxTokens: 65536
+      });
+      assert.strictEqual(highTokenBody.max_tokens, 65536);
+    });
   });
 
   describe('parseOpenAiResponse', () => {

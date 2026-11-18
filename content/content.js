@@ -17,7 +17,8 @@
     autoRun: true,
     isMinimized: false,
     availableModels: [],
-    lang: 'en'
+    lang: 'en',
+    maxTokens: 16384
   };
   let codeHistory = [];
   let promptHistory = [];
@@ -89,7 +90,12 @@
       modelInfoError: 'Konnte keine Modelle abrufen (Key prüfen).',
       invalidKeyError: 'Ungültiger Gemini API-Key. Bitte überprüfe deinen Key in den Einstellungen.',
       noResponseError: 'Keine Antwort von Gemini erhalten.',
-      statusTruncatedWarning: '⚠️ Warnung: Das Skript hat das Token-Ausgabelimit von Gemini (8.192 Tokens) erreicht und wurde abgeschnitten! Nutze ↩ Undo.',
+      maxTokensLabel: 'Max. Ausgabetokens',
+      maxTokensOpt8k: '8.192 Tokens (Standard)',
+      maxTokensOpt16k: '16.384 Tokens (Empfohlen)',
+      maxTokensOpt32k: '32.768 Tokens (Große Skripte)',
+      maxTokensOpt64k: '65.536 Tokens (Maximum)',
+      statusTruncatedWarning: (n) => `⚠️ Warnung: Das Skript hat das Token-Ausgabelimit (${n ? Number(n).toLocaleString('de-DE') : 'gewähltes Limit'} Tokens) erreicht und wurde abgeschnitten! Erhöhe das Limit in den Einstellungen (⚙) oder nutze ↩ Undo.`,
       fixErrorBtn: 'Fehler einfügen',
       fixErrorBtnTitle: 'Kopiert den letzten Konsolenfehler in das Promptfeld',
       errorBadge: 'Fehler in Konsole',
@@ -159,7 +165,12 @@
       modelInfoError: 'Could not fetch models (check key).',
       invalidKeyError: 'Invalid Gemini API key. Please check your key in settings.',
       noResponseError: 'No response received from Gemini.',
-      statusTruncatedWarning: '⚠️ Warning: The script reached Gemini\'s output token limit (8,192 tokens) and was truncated! Use ↩ Undo.',
+      maxTokensLabel: 'Max Output Tokens',
+      maxTokensOpt8k: '8,192 tokens (Default)',
+      maxTokensOpt16k: '16,384 tokens (Recommended)',
+      maxTokensOpt32k: '32,768 tokens (Large sketches)',
+      maxTokensOpt64k: '65,536 tokens (Maximum)',
+      statusTruncatedWarning: (n) => `⚠️ Warning: The script reached the output token limit (${n ? Number(n).toLocaleString('en-US') : 'selected limit'} tokens) and was truncated! Increase the token limit in settings (⚙) or use ↩ Undo.`,
       fixErrorBtn: 'Insert Error',
       fixErrorBtnTitle: 'Copies the latest console error into the prompt field',
       errorBadge: 'Console Error',
@@ -284,14 +295,16 @@
       lang: config.lang
     });
 
+    const targetTokens = config.maxTokens || 16384;
+
     const requestBody = transformer.buildOpenAiRequestBody({
       model,
       messages,
       temperature: 0.7,
-      maxTokens: 8192
+      maxTokens: targetTokens
     });
 
-    const response = await fetch(endpoint, {
+    let response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -300,7 +313,30 @@
       body: JSON.stringify(requestBody)
     });
 
-    const data = await response.json();
+    let data = await response.json();
+    if (!response.ok) {
+      // If error indicates max_tokens was too large for this specific model, retry with 8192 fallback
+      const errMsg = (data && data.error && data.error.message) ? data.error.message.toLowerCase() : '';
+      if ((response.status === 400 || response.status === 422) && (errMsg.includes('token') || errMsg.includes('limit')) && targetTokens > 8192) {
+        console.warn(`[p5-vibe] Model ${model} rejected max_tokens ${targetTokens}, retrying with 8192 fallback...`);
+        const fallbackBody = transformer.buildOpenAiRequestBody({
+          model,
+          messages,
+          temperature: 0.7,
+          maxTokens: 8192
+        });
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey.trim()}`
+          },
+          body: JSON.stringify(fallbackBody)
+        });
+        data = await response.json();
+      }
+    }
+
     if (!response.ok) {
       const errorMsg = transformer.parseApiError(response.status, data);
       return {
@@ -316,7 +352,7 @@
     }
 
     if (parsed.isTruncated) {
-      console.warn('[p5-vibe] Gemini response hit max_tokens (8192) and was truncated by the API!');
+      console.warn(`[p5-vibe] Gemini response hit max_tokens (${targetTokens}) and was truncated by the API!`);
     }
 
     return {
@@ -1037,6 +1073,16 @@
               <option value="de">🇩🇪 Deutsch</option>
             </select>
           </div>
+
+          <div class="p5-vibe-field">
+            <label for="p5-vibe-tokens-select" id="p5-vibe-label-tokens">${t('maxTokensLabel')}</label>
+            <select id="p5-vibe-tokens-select" class="p5-vibe-select">
+              <option value="8192">${t('maxTokensOpt8k')}</option>
+              <option value="16384" selected>${t('maxTokensOpt16k')}</option>
+              <option value="32768">${t('maxTokensOpt32k')}</option>
+              <option value="65536">${t('maxTokensOpt64k')}</option>
+            </select>
+          </div>
         </div>
 
         <!-- Prompt Header with Chat Indicator, Auto-Start Switch and History Button -->
@@ -1130,6 +1176,7 @@
     const modelSelect = panel.querySelector('#p5-vibe-model-select');
     const modelLabel = panel.querySelector('#p5-vibe-model-label');
     const langSelect = panel.querySelector('#p5-vibe-lang-select');
+    const tokensSelect = panel.querySelector('#p5-vibe-tokens-select');
     const btnMinimize = panel.querySelector('#p5-vibe-btn-minimize');
     const promptText = panel.querySelector('#p5-vibe-prompt-text');
     const btnGenerate = panel.querySelector('#p5-vibe-btn-generate');
@@ -1269,6 +1316,19 @@
 
       if (langSelect && langSelect.value !== config.lang) {
         langSelect.value = config.lang;
+      }
+
+      const labelTokens = panel.querySelector('#p5-vibe-label-tokens');
+      if (labelTokens) labelTokens.textContent = t('maxTokensLabel');
+      if (tokensSelect) {
+        const curTokensVal = tokensSelect.value;
+        tokensSelect.innerHTML = `
+          <option value="8192">${t('maxTokensOpt8k')}</option>
+          <option value="16384">${t('maxTokensOpt16k')}</option>
+          <option value="32768">${t('maxTokensOpt32k')}</option>
+          <option value="65536">${t('maxTokensOpt64k')}</option>
+        `;
+        if (curTokensVal) tokensSelect.value = curTokensVal;
       }
 
       const switchLabel = panel.querySelector('.p5-vibe-switch');
@@ -1462,6 +1522,14 @@
       });
     }
 
+    // Max Output Tokens Event
+    if (tokensSelect) {
+      tokensSelect.addEventListener('change', () => {
+        config.maxTokens = parseInt(tokensSelect.value, 10) || 16384;
+        saveSettings();
+      });
+    }
+
     // Auto-save API Key and Model
     keyInput.addEventListener('change', () => {
       config.apiKey = keyInput.value.trim();
@@ -1490,7 +1558,8 @@
       browser.storage.local.set({
         geminiApiKey: config.apiKey,
         geminiModel: config.model,
-        p5VibeLang: config.lang
+        p5VibeLang: config.lang,
+        p5VibeMaxTokens: config.maxTokens
       });
     }
 
@@ -1796,7 +1865,7 @@
             historyNavIndex = -1;
 
             if (response.isTruncated) {
-              setStatus(t('statusTruncatedWarning'), 'error');
+              setStatus(t('statusTruncatedWarning', config.maxTokens), 'error');
             } else if (config.autoRun) {
               setTimeout(() => {
                 triggerPlaySketch();
@@ -1850,7 +1919,8 @@
       'p5VibePosition',
       'p5VibePromptHistory',
       'p5VibeAutoRun',
-      'p5VibeLang'
+      'p5VibeLang',
+      'p5VibeMaxTokens'
     ]).then((data) => {
       const panel = document.getElementById('p5-vibe-panel');
       const pill = document.getElementById('p5-vibe-pill');
@@ -1859,6 +1929,7 @@
       const modelLabel = document.getElementById('p5-vibe-model-label');
       const historyCount = document.getElementById('p5-vibe-history-count');
       const autoRunToggle = document.getElementById('p5-vibe-autorun-toggle');
+      const tokensSelect = document.getElementById('p5-vibe-tokens-select');
 
       if (data.p5VibeLang === 'en' || data.p5VibeLang === 'de') {
         config.lang = data.p5VibeLang;
@@ -1867,6 +1938,15 @@
       }
       if (panel && typeof panel.__applyLanguage === 'function') {
         panel.__applyLanguage(config.lang);
+      }
+
+      if (data.p5VibeMaxTokens) {
+        config.maxTokens = parseInt(data.p5VibeMaxTokens, 10) || 16384;
+      } else {
+        config.maxTokens = 16384;
+      }
+      if (tokensSelect) {
+        tokensSelect.value = String(config.maxTokens);
       }
 
       if (typeof data.p5VibeAutoRun === 'boolean') {

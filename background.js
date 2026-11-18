@@ -26,11 +26,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'GET_CONFIG') {
-    browser.storage.local.get(['geminiApiKey', 'geminiModel', 'p5VibeLang'])
+    browser.storage.local.get(['geminiApiKey', 'geminiModel', 'p5VibeLang', 'p5VibeMaxTokens'])
       .then(res => sendResponse({
         apiKey: res.geminiApiKey || '',
         model: res.geminiModel || DEFAULT_MODEL,
-        lang: res.p5VibeLang || 'en'
+        lang: res.p5VibeLang || 'en',
+        maxTokens: parseInt(res.p5VibeMaxTokens, 10) || 16384
       }))
       .catch(err => sendResponse({ error: err.message }));
     return true;
@@ -42,6 +43,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       geminiModel: message.model || DEFAULT_MODEL
     };
     if (message.lang) toSet.p5VibeLang = message.lang;
+    if (message.maxTokens) toSet.p5VibeMaxTokens = message.maxTokens;
     browser.storage.local.set(toSet)
       .then(() => sendResponse({ success: true }))
       .catch(err => sendResponse({ success: false, error: err.message }));
@@ -59,7 +61,7 @@ function cleanGeneratedCode(rawText) {
 /**
  * Call the AI API (via OpenAI-compatible standard endpoint) to generate or modify p5.js code
  */
-async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model, chatSession, lang = 'en' }) {
+async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model, chatSession, lang = 'en', maxTokens = 16384 }) {
   const isEn = (lang === 'en');
   if (!apiKey || !apiKey.trim()) {
     return {
@@ -95,7 +97,7 @@ async function handleGenerateCode({ prompt, currentCode, mode, apiKey, model, ch
       model: currentModel,
       messages,
       temperature: 0.7,
-      maxTokens: 8192
+      maxTokens: maxTokens || 16384
     });
 
     try {

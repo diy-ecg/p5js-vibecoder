@@ -118,7 +118,7 @@ Wenn du im p5.js Web-Editor auf **„Vibe Code“** klickst oder `Ctrl+Enter` dr
 3. **Payload zusammenbauen (`lib/ai-transformer.js`)**:
    - `buildSystemPrompt`: Gibt präzise p5.js-Regeln vor (kein HTML, setup() und draw() vollständig halten, etc.).
    - `buildOpenAiMessages`: Baut die Nachrichten-Historie auf (System-Prompt, bisherige Chat-Runden, neue Anweisung inkl. aktuellem Sketch-Code).
-   - `buildOpenAiRequestBody`: Standardisiertes OpenAI-Format (`model`, `messages`, `temperature: 0.7`, `maxTokens: 8192`).
+   - `buildOpenAiRequestBody`: Standardisiertes OpenAI-Format (`model`, `messages`, `temperature: 0.7`, `maxTokens`: 8.192 bis 65.536 konfigurierbar, Standard 16.384).
 4. **API-Aufruf an Google Gemini (`content.js: requestGeminiApi`)**:
    - Sendet einen `POST`-Request direkt an `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`.
    - Bei Rate-Limits (HTTP 429) oder temporären Fehlern greift automatisch eine **Modell-Kaskade** (z. B. Fallback auf `gemini-2.0-flash`).
